@@ -22,18 +22,31 @@ export default defineEventHandler((event) => {
 
   let npcsCount = 0
   if (npcTypeId) {
+    // Count bidirectional: NPCs where Lore is 'to' OR 'from'
     const npcsResult = db
       .prepare(
         `
-      SELECT COUNT(*) as count
-      FROM entity_relations er
-      INNER JOIN entities e ON e.id = er.from_entity_id
-      WHERE er.to_entity_id = ?
-        AND e.type_id = ?
-        AND e.deleted_at IS NULL
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
     `,
       )
-      .get(Number(loreId), npcTypeId.id) as { count: number }
+      .get(Number(loreId), npcTypeId.id, Number(loreId), npcTypeId.id) as { count: number }
     npcsCount = npcsResult.count
   }
 
@@ -44,18 +57,31 @@ export default defineEventHandler((event) => {
 
   let itemsCount = 0
   if (itemTypeId) {
+    // Count bidirectional: Items where Lore is 'to' OR 'from'
     const itemsResult = db
       .prepare(
         `
-      SELECT COUNT(*) as count
-      FROM entity_relations er
-      INNER JOIN entities e ON e.id = er.from_entity_id
-      WHERE er.to_entity_id = ?
-        AND e.type_id = ?
-        AND e.deleted_at IS NULL
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
     `,
       )
-      .get(Number(loreId), itemTypeId.id) as { count: number }
+      .get(Number(loreId), itemTypeId.id, Number(loreId), itemTypeId.id) as { count: number }
     itemsCount = itemsResult.count
   }
 
@@ -66,18 +92,31 @@ export default defineEventHandler((event) => {
 
   let factionsCount = 0
   if (factionTypeId) {
+    // Count bidirectional: Factions where Lore is 'to' OR 'from'
     const factionsResult = db
       .prepare(
         `
-      SELECT COUNT(*) as count
-      FROM entity_relations er
-      INNER JOIN entities e ON e.id = er.from_entity_id
-      WHERE er.to_entity_id = ?
-        AND e.type_id = ?
-        AND e.deleted_at IS NULL
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
     `,
       )
-      .get(Number(loreId), factionTypeId.id) as { count: number }
+      .get(Number(loreId), factionTypeId.id, Number(loreId), factionTypeId.id) as { count: number }
     factionsCount = factionsResult.count
   }
 

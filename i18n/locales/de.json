@@ -332,6 +332,8 @@
     "deleteImageError": "Fehler beim Löschen des Bildes",
     "badgeTooltips": {
       "members": "Mitglieder (NPCs)",
+      "items": "Verknüpfte Items",
+      "locations": "Verknüpfte Orte",
       "lore": "Verknüpftes Wissen",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
@@ -372,7 +374,15 @@
     "addLore": "Wissen hinzufügen",
     "selectLore": "Wissen auswählen",
     "selectLorePlaceholder": "Wähle einen Wissenseintrag",
-    "linkLore": "Verknüpfen"
+    "linkLore": "Verknüpfen",
+    "linkedItems": "Verknüpfte Items",
+    "noLinkedItems": "Keine verknüpften Items",
+    "noLinkedItemsText": "Diese Fraktion ist noch mit keinen Items verknüpft.",
+    "addItem": "Item hinzufügen",
+    "selectItem": "Item auswählen",
+    "selectItemPlaceholder": "Wähle ein Item",
+    "linkItem": "Item verknüpfen",
+    "incomingItemTooltip": "Verknüpfung wurde vom Item erstellt"
   },
   "lore": {
     "title": "Wissen",
@@ -425,6 +435,13 @@
     "noLinkedItemsText": "Dieses Wissen ist noch mit keinen Items verknüpft.",
     "selectItem": "Item auswählen",
     "linkItem": "Item verknüpfen",
+    "linkedLocations": "Verknüpfte Orte",
+    "noLinkedLocations": "Keine verknüpften Orte",
+    "noLinkedLocationsText": "Dieses Wissen ist noch mit keinen Orten verknüpft.",
+    "selectLocation": "Ort auswählen",
+    "selectLocationPlaceholder": "Wähle einen Ort",
+    "linkLocation": "Ort verknüpfen",
+    "incomingLocationTooltip": "Verknüpfung wurde vom Ort erstellt",
     "badgeTooltips": {
       "npcs": "Verknüpfte NPCs",
       "items": "Verknüpfte Items",
@@ -513,10 +530,18 @@
     "linkLore": "Verknüpfen",
     "noLinkedLore": "Kein verknüpftes Wissen",
     "noLinkedLoreText": "Dieser Ort ist noch mit keinem Wissen verknüpft.",
+    "incomingLoreTooltip": "Verknüpfung wurde vom Wissenseintrag erstellt",
     "addLoreRelationError": "Fehler beim Hinzufügen der Wissens-Verknüpfung",
     "removeLoreRelationError": "Fehler beim Entfernen der Wissens-Verknüpfung",
+    "linkedItems": "Verknüpfte Items",
+    "selectItemPlaceholder": "Wähle ein Item",
+    "linkItem": "Item verknüpfen",
+    "noLinkedItems": "Keine verknüpften Items",
+    "noLinkedItemsText": "Dieser Ort ist noch mit keinen Items verknüpft.",
+    "incomingItemTooltip": "Verknüpfung wurde vom Item erstellt",
     "badgeTooltips": {
       "npcs": "Verknüpfte NPCs",
+      "items": "Verknüpfte Items",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie",
       "lore": "Verknüpftes Wissen"

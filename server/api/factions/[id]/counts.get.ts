@@ -70,6 +70,76 @@ export default defineEventHandler((event) => {
     )
     .get(Number(factionId)) as { count: number }
 
+  // Get items count (bidirectional)
+  const itemTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Item'").get() as
+    | { id: number }
+    | undefined
+
+  let itemsCount = 0
+  if (itemTypeId) {
+    const itemsResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(factionId), itemTypeId.id, Number(factionId), itemTypeId.id) as { count: number }
+    itemsCount = itemsResult.count
+  }
+
+  // Get locations count (bidirectional)
+  const locationTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Location'").get() as
+    | { id: number }
+    | undefined
+
+  let locationsCount = 0
+  if (locationTypeId) {
+    const locationsResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(factionId), locationTypeId.id, Number(factionId), locationTypeId.id) as {
+        count: number
+      }
+    locationsCount = locationsResult.count
+  }
+
   // Get images count
   const imagesCount = db
     .prepare(
@@ -83,6 +153,8 @@ export default defineEventHandler((event) => {
 
   return {
     members: membersCount,
+    items: itemsCount,
+    locations: locationsCount,
     lore: loreCount,
     documents: documentsCount.count,
     images: imagesCount.count,
