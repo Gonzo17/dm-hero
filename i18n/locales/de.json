@@ -349,7 +349,14 @@
       "arcane": "Arkan",
       "secret": "Geheim",
       "mercenary": "Söldner",
-      "noble": "Adel"
+      "noble": "Adel",
+      "assassins": "Assassinen",
+      "druidic": "Druidisch",
+      "cult": "Kult",
+      "trade": "Handel",
+      "political": "Politisch",
+      "pirates": "Piraten",
+      "magical": "Magisch"
     },
     "sizes": {
       "tiny": "Winzig (1-5)",
@@ -839,7 +846,10 @@
     "deleteImageError": "Fehler beim Löschen",
     "generateImageError": "Fehler beim Generieren",
     "download": "Herunterladen",
-    "noDescription": "Keine Beschreibung"
+    "noDescription": "Keine Beschreibung",
+    "items": "Items",
+    "locations": "Orte",
+    "lore": "Wissen"
   },
   "settings": {
     "title": "Einstellungen",

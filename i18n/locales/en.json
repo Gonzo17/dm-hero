@@ -345,7 +345,14 @@
       "arcane": "Arcane",
       "secret": "Secret",
       "mercenary": "Mercenary",
-      "noble": "Noble"
+      "noble": "Noble",
+      "assassins": "Assassins",
+      "druidic": "Druidic",
+      "cult": "Cult",
+      "trade": "Trade",
+      "political": "Political",
+      "pirates": "Pirates",
+      "magical": "Magical"
     },
     "sizes": {
       "tiny": "Tiny (1-5)",
@@ -819,7 +826,10 @@
     "deleteImageError": "Failed to delete image",
     "generateImageError": "Failed to generate image",
     "download": "Download",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "items": "Items",
+    "locations": "Locations",
+    "lore": "Lore"
   },
   "settings": {
     "title": "Settings",
