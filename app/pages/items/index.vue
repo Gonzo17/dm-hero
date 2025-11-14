@@ -198,7 +198,7 @@
       v-model="showCreateDialog"
       max-width="1200"
       scrollable
-      :persistent="generatingImage || uploadingImage"
+      :persistent="imageGenerating"
     >
       <v-card>
         <v-card-title>
@@ -210,6 +210,14 @@
             <v-icon start> mdi-information </v-icon>
             {{ $t('items.details') }}
           </v-tab>
+          <v-tab value="images">
+            <v-icon start> mdi-image-multiple </v-icon>
+            {{ $t('common.images') }} ({{ editingItem?._counts?.images ?? 0 }})
+          </v-tab>
+          <v-tab value="documents">
+            <v-icon start> mdi-file-document </v-icon>
+            {{ $t('documents.title') }} ({{ editingItem?._counts?.documents ?? 0 }})
+          </v-tab>
           <v-tab value="owners">
             <v-icon start> mdi-account </v-icon>
             {{ $t('items.owners') }} ({{ itemOwners.length }})
@@ -218,13 +226,13 @@
             <v-icon start> mdi-map-marker </v-icon>
             {{ $t('items.locations') }} ({{ itemLocations.length }})
           </v-tab>
+          <v-tab value="factions">
+            <v-icon start> mdi-shield-account </v-icon>
+            {{ $t('factions.title') }} ({{ linkedFactions.length }})
+          </v-tab>
           <v-tab value="lore">
             <v-icon start> mdi-book-open-variant </v-icon>
             {{ $t('lore.title') }} ({{ linkedLore.length }})
-          </v-tab>
-          <v-tab value="documents">
-            <v-icon start> mdi-file-document </v-icon>
-            {{ $t('documents.title') }} ({{ editingItem?._counts?.documents ?? 0 }})
           </v-tab>
         </v-tabs>
 
@@ -232,157 +240,10 @@
           <v-tabs-window v-if="editingItem" v-model="itemDialogTab">
             <!-- Details Tab -->
             <v-tabs-window-item value="details">
-              <!-- Image Upload Section -->
-              <v-card variant="outlined" class="mb-4">
-                <v-card-text>
-                  <div class="d-flex align-center gap-4">
-                    <!-- Image Preview -->
-                    <div style="position: relative">
-                      <v-avatar
-                        size="160"
-                        rounded="lg"
-                        :color="editingItem?.image_url ? undefined : 'grey-lighten-2'"
-                        :style="editingItem?.image_url ? 'cursor: pointer;' : ''"
-                        @click="
-                          editingItem?.image_url
-                            ? openImagePreview(`/uploads/${editingItem.image_url}`, itemForm.name)
-                            : null
-                        "
-                      >
-                        <v-img
-                          v-if="editingItem?.image_url"
-                          :src="`/uploads/${editingItem.image_url}`"
-                          cover
-                          :class="{ 'blur-image': uploadingImage || generatingImage }"
-                        />
-                        <v-icon
-                          v-else-if="!uploadingImage && !generatingImage"
-                          icon="mdi-sword"
-                          size="80"
-                          color="grey"
-                        />
-                      </v-avatar>
-                      <v-progress-circular
-                        v-if="uploadingImage || generatingImage"
-                        indeterminate
-                        color="primary"
-                        size="64"
-                        width="6"
-                        style="
-                          position: absolute;
-                          top: 50%;
-                          left: 50%;
-                          transform: translate(-50%, -50%);
-                        "
-                      />
-                    </div>
-
-                    <!-- Image Actions -->
-                    <div class="flex-grow-1" style="max-width: 280px; margin-left: 16px">
-                      <!-- Upload Button -->
-                      <v-btn
-                        prepend-icon="mdi-camera"
-                        color="primary"
-                        variant="tonal"
-                        block
-                        class="mb-2"
-                        :disabled="uploadingImage || deletingImage || generatingImage"
-                        @click="triggerImageUpload"
-                      >
-                        {{
-                          editingItem?.image_url ? $t('items.changeImage') : $t('items.uploadImage')
-                        }}
-                      </v-btn>
-                      <input
-                        ref="fileInputRef"
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                        style="display: none"
-                        @change="handleImageUpload"
-                      />
-
-                      <!-- AI Generate Button -->
-                      <div class="d-flex align-center gap-2">
-                        <v-btn
-                          prepend-icon="mdi-creation"
-                          color="primary"
-                          variant="tonal"
-                          block
-                          class="mb-2"
-                          :loading="generatingImage"
-                          :disabled="
-                            uploadingImage ||
-                            deletingImage ||
-                            !itemForm.name ||
-                            !hasApiKey ||
-                            hasUnsavedChanges
-                          "
-                          @click="generateImage"
-                        >
-                          {{ $t('items.generateImage') }}
-                        </v-btn>
-                        <v-tooltip v-if="hasUnsavedChanges" location="top">
-                          <template #activator="{ props }">
-                            <v-icon
-                              v-bind="props"
-                              icon="mdi-information-outline"
-                              color="warning"
-                              size="small"
-                              class="mb-2"
-                            />
-                          </template>
-                          <span>{{ $t('items.saveBeforeGenerating') }}</span>
-                        </v-tooltip>
-                      </div>
-
-                      <!-- Download Button (only if image exists) -->
-                      <v-btn
-                        v-if="editingItem?.image_url"
-                        prepend-icon="mdi-download"
-                        variant="outlined"
-                        block
-                        class="mb-2"
-                        :disabled="uploadingImage || generatingImage"
-                        @click="downloadImage(`/uploads/${editingItem.image_url}`, itemForm.name)"
-                      >
-                        Download
-                      </v-btn>
-
-                      <!-- Delete Button (only if image exists) -->
-                      <v-btn
-                        v-if="editingItem?.image_url"
-                        prepend-icon="mdi-delete"
-                        color="error"
-                        variant="outlined"
-                        block
-                        :loading="deletingImage"
-                        :disabled="uploadingImage || generatingImage"
-                        @click="deleteImage"
-                      >
-                        {{ $t('items.deleteImage') }}
-                      </v-btn>
-
-                      <!-- AI Hint -->
-                      <div v-if="!hasApiKey" class="text-caption text-medium-emphasis mt-3">
-                        <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                        KI-Generierung: OpenAI API-Key in Einstellungen hinterlegen
-                      </div>
-                      <div
-                        v-else-if="!itemForm.name"
-                        class="text-caption text-medium-emphasis mt-3"
-                      >
-                        <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                        KI-Generierung: Bitte zuerst einen Namen eingeben
-                      </div>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-
               <v-text-field
                 v-model="itemForm.name"
                 :label="$t('items.name')"
-                :rules="[(v) => !!v || $t('items.nameRequired')]"
+                :rules="[(v: string) => !!v || $t('items.nameRequired')]"
                 variant="outlined"
                 class="mb-4"
               />
@@ -477,6 +338,20 @@
                 :label="$t('items.requiresAttunement')"
                 color="primary"
                 hide-details
+              />
+            </v-tabs-window-item>
+
+            <!-- Images Tab -->
+            <v-tabs-window-item value="images">
+              <EntityImageGallery
+                v-if="editingItem"
+                :entity-id="editingItem.id"
+                entity-type="Item"
+                :entity-name="editingItem.name"
+                :entity-description="editingItem.description || undefined"
+                @preview-image="openImagePreview"
+                @generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
+                @images-updated="handleImagesUpdated"
               />
             </v-tabs-window-item>
 
@@ -732,6 +607,83 @@
               </div>
             </v-tabs-window-item>
 
+            <!-- Factions Tab -->
+            <v-tabs-window-item value="factions">
+              <div v-if="editingItem">
+                <!-- Add Faction Relation -->
+                <v-card variant="outlined" class="mb-4">
+                  <v-card-text>
+                    <v-autocomplete
+                      v-model="selectedFactionId"
+                      :items="factionItems"
+                      :label="$t('factions.selectFaction')"
+                      :placeholder="$t('factions.selectFactionPlaceholder')"
+                      variant="outlined"
+                      clearable
+                      :loading="loadingFactions"
+                      class="mb-2"
+                    />
+                    <v-btn color="primary" :disabled="!selectedFactionId" @click="addFactionRelation">
+                      <v-icon start> mdi-link-plus </v-icon>
+                      {{ $t('factions.addRelation') }}
+                    </v-btn>
+                  </v-card-text>
+                </v-card>
+
+                <!-- Linked Factions List -->
+                <v-list v-if="linkedFactions.length > 0">
+                  <v-list-item v-for="faction in linkedFactions" :key="faction.id" class="mb-2">
+                    <template #prepend>
+                      <v-avatar v-if="faction.image_url" size="56" rounded="lg" class="mr-3">
+                        <v-img :src="`/uploads/${faction.image_url}`" />
+                      </v-avatar>
+                      <v-avatar v-else size="56" rounded="lg" class="mr-3" color="surface-variant">
+                        <v-icon icon="mdi-shield-account" />
+                      </v-avatar>
+                    </template>
+                    <v-list-item-title>
+                      {{ faction.name }}
+                      <v-chip
+                        v-if="faction.direction === 'incoming'"
+                        size="x-small"
+                        color="info"
+                        class="ml-2"
+                      >
+                        ←
+                      </v-chip>
+                    </v-list-item-title>
+                    <v-list-item-subtitle v-if="faction.description">
+                      {{ faction.description.substring(0, 100)
+                      }}{{ faction.description.length > 100 ? '...' : '' }}
+                    </v-list-item-subtitle>
+                    <template #append>
+                      <v-btn
+                        v-if="faction.direction === 'outgoing' || !faction.direction"
+                        icon="mdi-delete"
+                        variant="text"
+                        color="error"
+                        size="small"
+                        @click="removeFactionRelation(faction.id)"
+                      />
+                      <v-tooltip v-else location="left">
+                        <template #activator="{ props }">
+                          <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
+                        </template>
+                        {{ $t('items.incomingFactionTooltip') }}
+                      </v-tooltip>
+                    </template>
+                  </v-list-item>
+                </v-list>
+
+                <v-empty-state
+                  v-else
+                  icon="mdi-shield-account"
+                  :title="$t('items.noLinkedFactions')"
+                  :text="$t('items.noLinkedFactionsText')"
+                />
+              </div>
+            </v-tabs-window-item>
+
             <!-- Documents Tab -->
             <v-tabs-window-item value="documents">
               <EntityDocuments
@@ -747,7 +699,7 @@
             <v-text-field
               v-model="itemForm.name"
               :label="$t('items.name')"
-              :rules="[(v) => !!v || $t('items.nameRequired')]"
+              :rules="[(v: string) => !!v || $t('items.nameRequired')]"
               variant="outlined"
               class="mb-4"
             />
@@ -847,12 +799,12 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" :disabled="generatingImage || uploadingImage" @click="closeDialog">
+          <v-btn variant="text" :disabled="imageGenerating" @click="closeDialog">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
             color="primary"
-            :disabled="!itemForm.name || generatingImage || uploadingImage"
+            :disabled="!itemForm.name || imageGenerating"
             :loading="saving"
             @click="saveItem"
           >
@@ -886,6 +838,7 @@
 import type { Item, ItemMetadata } from '../../../types/item'
 import { ITEM_TYPES, ITEM_RARITIES } from '../../../types/item'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
+import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import ItemCard from '~/components/items/ItemCard.vue'
 
@@ -954,6 +907,7 @@ onMounted(async () => {
     entitiesStore.fetchItems(activeCampaignId.value),
     entitiesStore.fetchNPCs(activeCampaignId.value),
     entitiesStore.fetchLocations(activeCampaignId.value),
+    entitiesStore.fetchFactions(activeCampaignId.value),
     entitiesStore.fetchLore(activeCampaignId.value),
   ])
 
@@ -1139,177 +1093,21 @@ const linkedLore = ref<
 const selectedLoreId = ref<number | null>(null)
 const loadingLore = ref(false)
 
-// Image upload state
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const uploadingImage = ref(false)
-const deletingImage = ref(false)
-const generatingImage = ref(false)
+// Factions linking state
+const linkedFactions = ref<
+  Array<{
+    id: number
+    name: string
+    description: string | null
+    image_url: string | null
+    direction?: 'outgoing' | 'incoming'
+  }>
+>([])
+const selectedFactionId = ref<number | null>(null)
+const loadingFactions = ref(false)
 
-// Trigger file input click
-function triggerImageUpload() {
-  fileInputRef.value?.click()
-}
-
-// AI Image Generation
-async function generateImage() {
-  if (!editingItem.value || !itemForm.value.name) return
-
-  generatingImage.value = true
-
-  try {
-    // Build detailed prompt from all available item data
-    const details = []
-
-    // Type (most important - weapon, armor, potion, etc.)
-    if (itemForm.value.metadata.type) {
-      details.push(itemForm.value.metadata.type)
-    }
-
-    // Rarity (affects visual quality and details)
-    if (itemForm.value.metadata.rarity) {
-      const rarityDescriptions: Record<string, string> = {
-        common: 'simple',
-        uncommon: 'well-crafted',
-        rare: 'ornate and detailed',
-        very_rare: 'exquisitely decorated',
-        legendary: 'legendary artifact with glowing runes',
-        artifact: 'ancient powerful artifact radiating magic',
-      }
-      const rarityDesc =
-        rarityDescriptions[itemForm.value.metadata.rarity] || itemForm.value.metadata.rarity
-      details.push(rarityDesc)
-    }
-
-    // Name (required)
-    details.push(itemForm.value.name)
-
-    // Description (free-form details)
-    if (itemForm.value.description) {
-      details.push(itemForm.value.description)
-    }
-
-    const prompt = details.filter((d) => d).join(', ')
-
-    const result = await $fetch<{ imageUrl: string; revisedPrompt?: string }>(
-      '/api/ai/generate-image',
-      {
-        method: 'POST',
-        body: {
-          prompt,
-          entityName: itemForm.value.name,
-          entityType: 'Item',
-          style: 'fantasy-art',
-        },
-      },
-    )
-
-    if (result.imageUrl && editingItem.value) {
-      // Update the item with the generated image
-      const response = await $fetch<{ success: boolean }>(
-        `/api/entities/${editingItem.value.id}/set-image`,
-        {
-          method: 'POST',
-          body: {
-            imageUrl: result.imageUrl.replace('/uploads/', ''), // Remove /uploads/ prefix
-          },
-        },
-      )
-
-      if (response.success) {
-        // Update local item
-        editingItem.value.image_url = result.imageUrl.replace('/uploads/', '')
-        // Refresh NPCs to update the list
-        if (activeCampaignId.value) {
-          await entitiesStore.fetchItems(activeCampaignId.value)
-        }
-      }
-    }
-  } catch (error: unknown) {
-    console.error('[Item] Failed to generate image:', error)
-    const errorMessage =
-      error &&
-      typeof error === 'object' &&
-      'data' in error &&
-      error.data &&
-      typeof error.data === 'object' &&
-      'message' in error.data
-        ? String(error.data.message)
-        : 'Failed to generate image'
-    alert(errorMessage)
-  } finally {
-    generatingImage.value = false
-  }
-}
-
-// Handle image upload from native input
-async function handleImageUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (!target.files || !target.files.length || !editingItem.value) return
-
-  const file = target.files[0]
-  if (!file) return
-
-  uploadingImage.value = true
-
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await $fetch<{ success: boolean; imageUrl: string }>(
-      `/api/entities/${editingItem.value.id}/upload-image`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-    )
-
-    if (response.success) {
-      // Update the editing item with new image URL
-      editingItem.value.image_url = response.imageUrl
-
-      // Update the item in the store list directly
-      const itemInList = entitiesStore.items?.find((i) => i.id === editingItem.value!.id)
-      if (itemInList) {
-        itemInList.image_url = response.imageUrl
-      }
-
-      // Clear file input
-      target.value = ''
-    }
-  } catch (error) {
-    console.error('Failed to upload image:', error)
-    alert(t('items.uploadImageError'))
-  } finally {
-    uploadingImage.value = false
-  }
-}
-
-// Delete image function
-async function deleteImage() {
-  if (!editingItem.value?.image_url) return
-
-  deletingImage.value = true
-
-  try {
-    await $fetch(`/api/entities/${editingItem.value.id}/delete-image`, {
-      method: 'DELETE',
-    })
-
-    // Update the editing item
-    editingItem.value.image_url = null
-
-    // Update the item in the store list directly
-    const itemInList = entitiesStore.items?.find((i) => i.id === editingItem.value!.id)
-    if (itemInList) {
-      itemInList.image_url = null
-    }
-  } catch (error) {
-    console.error('Failed to delete image:', error)
-    alert(t('items.deleteImageError'))
-  } finally {
-    deletingImage.value = false
-  }
-}
+// Image state
+const imageGenerating = ref(false)
 
 // Use image download composable
 const { downloadImage } = useImageDownload()
@@ -1497,6 +1295,16 @@ async function handleDocumentsChanged() {
   }
 }
 
+// Handle images updated event (from EntityImageGallery)
+async function handleImagesUpdated() {
+  if (editingItem.value) {
+    // Reload the item to get updated image_url
+    const updatedItem = await $fetch<Item>(`/api/items/${editingItem.value.id}`)
+    editingItem.value = updatedItem
+    await reloadItemCounts(editingItem.value)
+  }
+}
+
 function closeDialog() {
   showCreateDialog.value = false
   editingItem.value = null
@@ -1631,14 +1439,22 @@ const loreItems = computed(() => {
   }))
 })
 
-// Load linked lore when editing Item
+const factionItems = computed(() => {
+  return entitiesStore.factionsForSelect.map((faction: { id: number; name: string }) => ({
+    title: faction.name,
+    value: faction.id,
+  }))
+})
+
+// Load linked entities when editing Item
 watch(
   () => editingItem.value?.id,
   async (itemId) => {
     if (itemId) {
-      await loadLinkedLore(itemId)
+      await Promise.all([loadLinkedLore(itemId), loadLinkedFactions(itemId)])
     } else {
       linkedLore.value = []
+      linkedFactions.value = []
     }
   },
 )
@@ -1702,6 +1518,72 @@ async function removeLoreRelation(loreId: number) {
     }
   } catch (error) {
     console.error('Failed to remove lore relation:', error)
+  }
+}
+
+// Factions linking functions
+async function loadLinkedFactions(itemId: number) {
+  loadingFactions.value = true
+  try {
+    const factions = await $fetch<
+      Array<{
+        id: number
+        name: string
+        description: string | null
+        image_url: string | null
+        direction?: 'outgoing' | 'incoming'
+      }>
+    >(`/api/items/${itemId}/factions`)
+    linkedFactions.value = factions
+  } catch (error) {
+    console.error('Failed to load linked factions:', error)
+  } finally {
+    loadingFactions.value = false
+  }
+}
+
+async function addFactionRelation() {
+  if (!editingItem.value || !selectedFactionId.value) return
+
+  try {
+    await $fetch('/api/entity-relations', {
+      method: 'POST',
+      body: {
+        fromEntityId: editingItem.value.id,
+        toEntityId: selectedFactionId.value,
+        relationType: 'bezieht sich auf',
+        relationNotes: null,
+      },
+    })
+
+    selectedFactionId.value = null
+    await loadLinkedFactions(editingItem.value.id)
+  } catch (error) {
+    console.error('Failed to add faction relation:', error)
+  }
+}
+
+async function removeFactionRelation(factionId: number) {
+  if (!editingItem.value) return
+
+  try {
+    // Find the relation ID
+    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
+      query: {
+        fromEntityId: editingItem.value.id,
+        toEntityId: factionId,
+      },
+    })
+
+    if (relation?.id) {
+      await $fetch(`/api/entity-relations/${relation.id}`, {
+        method: 'DELETE',
+      })
+
+      await loadLinkedFactions(editingItem.value.id)
+    }
+  } catch (error) {
+    console.error('Failed to remove faction relation:', error)
   }
 }
 </script>

@@ -208,6 +208,33 @@
           <span>{{ $t('npcs.badgeTooltips.images') }}</span>
         </v-tooltip>
 
+        <!-- Lore Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-book-open-variant"
+              size="small"
+              variant="outlined"
+              :color="counts.lore > 0 ? 'primary' : undefined"
+            >
+              {{ counts.lore }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-book-open-variant"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('npcs.badgeTooltips.lore') }}</span>
+        </v-tooltip>
+
         <!-- Memberships Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">

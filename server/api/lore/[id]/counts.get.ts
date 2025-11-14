@@ -120,6 +120,41 @@ export default defineEventHandler((event) => {
     factionsCount = factionsResult.count
   }
 
+  // Get Location type ID
+  const locationTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Location'").get() as
+    | { id: number }
+    | undefined
+
+  let locationsCount = 0
+  if (locationTypeId) {
+    // Count bidirectional: Locations where Lore is 'to' OR 'from'
+    const locationsResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(loreId), locationTypeId.id, Number(loreId), locationTypeId.id) as { count: number }
+    locationsCount = locationsResult.count
+  }
+
   // Get documents count
   const documentsCount = db
     .prepare(
@@ -146,6 +181,7 @@ export default defineEventHandler((event) => {
     npcs: npcsCount,
     items: itemsCount,
     factions: factionsCount,
+    locations: locationsCount,
     documents: documentsCount.count,
     images: imagesCount.count,
   }

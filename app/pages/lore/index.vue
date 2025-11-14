@@ -99,6 +99,10 @@
             <v-icon start> mdi-file-document </v-icon>
             {{ $t('documents.title') }} ({{ editingLore._counts?.documents ?? 0 }})
           </v-tab>
+          <v-tab value="npcs">
+            <v-icon start> mdi-account </v-icon>
+            {{ $t('npcs.title') }} ({{ linkedNpcs.length }})
+          </v-tab>
           <v-tab value="factions">
             <v-icon start> mdi-shield-account </v-icon>
             {{ $t('factions.title') }} ({{ linkedFactions.length }})
@@ -176,6 +180,88 @@
                 entity-type="Lore"
                 @changed="handleDocumentsChanged"
               />
+            </v-tabs-window-item>
+
+            <!-- NPCs Tab -->
+            <v-tabs-window-item value="npcs">
+              <div class="text-h6 mb-4">
+                {{ $t('lore.linkedNpcs') }}
+              </div>
+
+              <v-list v-if="linkedNpcs.length > 0">
+                <v-list-item v-for="npc in linkedNpcs" :key="npc.id" class="mb-2" border>
+                  <template #prepend>
+                    <v-avatar v-if="npc.image_url" size="40" rounded="lg">
+                      <v-img :src="`/uploads/${npc.image_url}`" />
+                    </v-avatar>
+                    <v-icon v-else icon="mdi-account" color="primary" />
+                  </template>
+                  <v-list-item-title>
+                    {{ npc.name }}
+                    <v-chip
+                      v-if="npc.direction === 'incoming'"
+                      size="x-small"
+                      color="info"
+                      class="ml-2"
+                    >
+                      ←
+                    </v-chip>
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="npc.description">
+                    {{ npc.description.substring(0, 100) }}{{ npc.description.length > 100 ? '...' : '' }}
+                  </v-list-item-subtitle>
+                  <template #append>
+                    <v-btn
+                      v-if="npc.direction === 'outgoing' || !npc.direction"
+                      icon="mdi-delete"
+                      variant="text"
+                      size="small"
+                      color="error"
+                      @click="removeNpcRelation(npc.id)"
+                    />
+                    <v-tooltip v-else location="left">
+                      <template #activator="{ props }">
+                        <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
+                      </template>
+                      {{ $t('lore.incomingNpcTooltip') }}
+                    </v-tooltip>
+                  </template>
+                </v-list-item>
+              </v-list>
+
+              <v-empty-state
+                v-else
+                icon="mdi-account-off"
+                :title="$t('lore.noLinkedNpcs')"
+                :text="$t('lore.noLinkedNpcsText')"
+              />
+
+              <v-divider class="my-4" />
+
+              <div class="text-h6 mb-4">
+                {{ $t('lore.addNpc') }}
+              </div>
+
+              <v-autocomplete
+                v-model="selectedNpcToLink"
+                :items="npcsForSelect"
+                item-title="name"
+                item-value="id"
+                :label="$t('lore.selectNpc')"
+                :placeholder="$t('lore.selectNpcPlaceholder')"
+                variant="outlined"
+                clearable
+                class="mb-2"
+              />
+
+              <v-btn
+                color="primary"
+                block
+                :disabled="!selectedNpcToLink"
+                @click="addNpcRelation"
+              >
+                {{ $t('lore.linkNpc') }}
+              </v-btn>
             </v-tabs-window-item>
 
             <!-- Factions Tab -->
@@ -574,6 +660,18 @@ const imageGenerating = ref(false)
 const linkedFactions = ref<Array<{ id: number; name: string; description: string | null; image_url: string | null }>>([])
 const selectedFactionToLink = ref<number | null>(null)
 
+// NPCs linking
+const linkedNpcs = ref<
+  Array<{
+    id: number
+    name: string
+    description: string | null
+    image_url: string | null
+    direction?: 'outgoing' | 'incoming'
+  }>
+>([])
+const selectedNpcToLink = ref<number | null>(null)
+
 // Items linking
 const linkedItems = ref<Array<{ id: number; name: string; description: string | null; image_url: string | null }>>([])
 const selectedItemToLink = ref<number | null>(null)
@@ -608,6 +706,14 @@ const factionsForSelect = computed(() => {
   return (entitiesStore.factions || []).map((faction) => ({
     id: faction.id,
     name: faction.name,
+  }))
+})
+
+// Computed for NPCs selection
+const npcsForSelect = computed(() => {
+  return (entitiesStore.npcs || []).map((npc) => ({
+    id: npc.id,
+    name: npc.name,
   }))
 })
 
@@ -901,6 +1007,64 @@ async function removeFactionRelation(factionId: number) {
   }
 }
 
+// NPCs functions
+async function loadLinkedNpcs() {
+  if (!editingLore.value) return
+  try {
+    const npcs = await $fetch<
+      Array<{
+        id: number
+        name: string
+        description: string | null
+        image_url: string | null
+        direction?: 'outgoing' | 'incoming'
+      }>
+    >(`/api/lore/${editingLore.value.id}/npcs`)
+    linkedNpcs.value = npcs
+  } catch (error) {
+    console.error('Failed to load linked NPCs:', error)
+  }
+}
+
+async function addNpcRelation() {
+  if (!editingLore.value || !selectedNpcToLink.value) return
+  try {
+    await $fetch('/api/entity-relations', {
+      method: 'POST',
+      body: {
+        fromEntityId: selectedNpcToLink.value,
+        toEntityId: editingLore.value.id,
+        relationType: 'kennt',
+        relationNotes: null,
+      },
+    })
+    await loadLinkedNpcs()
+    selectedNpcToLink.value = null
+  } catch (error) {
+    console.error('Failed to add NPC relation:', error)
+  }
+}
+
+async function removeNpcRelation(npcId: number) {
+  if (!editingLore.value) return
+  try {
+    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
+      query: {
+        fromEntityId: npcId,
+        toEntityId: editingLore.value.id,
+      },
+    })
+    if (relation) {
+      await $fetch(`/api/entity-relations/${relation.id}`, {
+        method: 'DELETE',
+      })
+      await loadLinkedNpcs()
+    }
+  } catch (error) {
+    console.error('Failed to remove NPC relation:', error)
+  }
+}
+
 // Items for selection
 const itemsForSelect = computed(() => {
   return entitiesStore.itemsForSelect.map((item: { id: number; name: string }) => ({
@@ -1048,6 +1212,7 @@ watch(
     if (loreId && editingLore.value) {
       await Promise.all([
         loadLinkedFactions(),
+        loadLinkedNpcs(),
         loadLinkedItems(),
         loadLinkedLocations(),
         reloadLoreCounts(editingLore.value),

@@ -57,7 +57,7 @@
             :is-highlighted="highlightedId === faction.id"
             @view="viewFaction"
             @edit="editFaction"
-            @download="(faction) => downloadImage(`/uploads/${faction.image_url}`, faction.name)"
+            @download="(faction: Faction) => downloadImage(`/uploads/${faction.image_url}`, faction.name)"
             @delete="deleteFaction"
           />
         </v-col>
@@ -264,7 +264,7 @@
               <v-text-field
                 v-model="factionForm.name"
                 :label="$t('factions.name')"
-                :rules="[(v) => !!v || $t('factions.nameRequired')]"
+                :rules="[(v: string) => !!v || $t('factions.nameRequired')]"
                 variant="outlined"
                 class="mb-4"
               />
@@ -684,7 +684,7 @@
             <v-text-field
               v-model="factionForm.name"
               :label="$t('factions.name')"
-              :rules="[(v) => !!v || $t('factions.nameRequired')]"
+              :rules="[(v: string) => !!v || $t('factions.nameRequired')]"
               variant="outlined"
               class="mb-4"
             />

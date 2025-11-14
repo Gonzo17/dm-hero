@@ -263,6 +263,7 @@
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie",
       "items": "Items im Besitz",
+      "lore": "Verknüpftes Wissen",
       "memberships": "Fraktionsmitgliedschaften"
     }
   },
@@ -423,6 +424,14 @@
     "addRelation": "Verknüpfen",
     "noLinkedLore": "Kein verknüpftes Wissen",
     "noLinkedLoreText": "Dieser NPC ist noch mit keinem Wissen verknüpft.",
+    "linkedNpcs": "Verknüpfte NPCs",
+    "noLinkedNpcs": "Keine verknüpften NPCs",
+    "noLinkedNpcsText": "Dieses Wissen ist noch mit keinen NPCs verknüpft.",
+    "addNpc": "NPC hinzufügen",
+    "selectNpc": "NPC auswählen",
+    "selectNpcPlaceholder": "Wähle einen NPC",
+    "linkNpc": "Verknüpfen",
+    "incomingNpcTooltip": "Verknüpfung wurde vom NPC erstellt",
     "linkedFactions": "Verknüpfte Fraktionen",
     "noLinkedFactions": "Keine verknüpften Fraktionen",
     "noLinkedFactionsText": "Dieses Wissen ist noch mit keinen Fraktionen verknüpft.",
@@ -446,6 +455,7 @@
       "npcs": "Verknüpfte NPCs",
       "items": "Verknüpfte Items",
       "factions": "Verknüpfte Fraktionen",
+      "locations": "Verknüpfte Orte",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
     }
@@ -665,9 +675,13 @@
     "deleteImageError": "Fehler beim Löschen des Bildes",
     "saveBeforeGenerating": "Details geändert - erst speichern",
     "documents": "Dokumente",
+    "noLinkedFactions": "Keine verknüpften Fraktionen",
+    "noLinkedFactionsText": "Dieses Item ist noch mit keinen Fraktionen verknüpft.",
+    "incomingFactionTooltip": "Verknüpfung wurde von der Fraktion erstellt",
     "badgeTooltips": {
       "owners": "Besitzer (NPCs)",
       "locations": "Orte",
+      "factions": "Verknüpfte Fraktionen",
       "lore": "Verknüpftes Wissen",
       "documents": "Dokumente & Notizen",
       "images": "Bildergalerie"
