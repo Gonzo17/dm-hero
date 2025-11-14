@@ -191,9 +191,21 @@
             <v-icon start>mdi-map-marker-outline</v-icon>
             {{ $t('locations.details') }}
           </v-tab>
+          <v-tab value="images">
+            <v-icon start>mdi-image-multiple</v-icon>
+            {{ $t('common.images') }} ({{ locationCounts?.images || 0 }})
+          </v-tab>
+          <v-tab value="documents">
+            <v-icon start>mdi-file-document</v-icon>
+            {{ $t('documents.title') }} ({{ locationCounts?.documents || 0 }})
+          </v-tab>
           <v-tab value="npcs">
             <v-icon start>mdi-account-group</v-icon>
             {{ $t('npcs.title') }} ({{ locationCounts?.npcs || 0 }})
+          </v-tab>
+          <v-tab value="items">
+            <v-icon start>mdi-treasure-chest</v-icon>
+            {{ $t('items.title') }} ({{ linkedItems.length }})
           </v-tab>
           <v-tab value="lore">
             <v-icon start>mdi-book-open-variant</v-icon>
@@ -205,141 +217,6 @@
           <v-tabs-window v-if="editingLocation" v-model="locationDialogTab">
             <!-- Details Tab -->
             <v-tabs-window-item value="details">
-          <!-- Image Upload Section (only for editing) -->
-          <!-- Image Gallery -->
-          <v-card v-if="editingLocation" variant="outlined" class="mb-4">
-            <v-card-title class="d-flex align-center">
-              <v-icon icon="mdi-image-multiple" class="mr-2" />
-              Bilder
-              <v-spacer />
-              <v-btn
-                icon="mdi-creation"
-                color="primary"
-                size="small"
-                class="mr-2"
-                :disabled="!locationForm.name || !hasApiKey || generatingImage || uploadingImage"
-                :loading="generatingImage"
-                @click="generateImage"
-              >
-                <v-icon>mdi-creation</v-icon>
-                <v-tooltip activator="parent" location="bottom">
-                  {{ $t('locations.generateImage') }}
-                </v-tooltip>
-              </v-btn>
-              <v-btn
-                icon="mdi-plus"
-                color="primary"
-                size="small"
-                :disabled="uploadingImage || generatingImage"
-                @click="triggerImageUpload"
-              >
-                <v-icon>mdi-plus</v-icon>
-                <v-tooltip activator="parent" location="bottom"> Bilder hochladen </v-tooltip>
-              </v-btn>
-              <input
-                ref="fileInputRef"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                multiple
-                style="display: none"
-                @change="handleImageUpload"
-              />
-            </v-card-title>
-            <v-card-text>
-              <v-progress-linear v-if="loadingImages" indeterminate />
-              <v-list v-else-if="locationImages.length > 0">
-                <v-list-item v-for="image in locationImages" :key="image.id" class="mb-3">
-                  <template #prepend>
-                    <div class="position-relative image-container mr-3">
-                      <v-avatar
-                        size="80"
-                        rounded="lg"
-                        style="cursor: pointer"
-                        @click="
-                          openImagePreview(
-                            `/uploads/${image.image_url}`,
-                            editingLocation?.name || 'Location Image',
-                          )
-                        "
-                      >
-                        <v-img :src="`/uploads/${image.image_url}`" cover />
-                      </v-avatar>
-                      <v-btn
-                        icon="mdi-download"
-                        size="x-small"
-                        variant="tonal"
-                        class="image-download-btn"
-                        @click.stop="
-                          downloadImage(
-                            `/uploads/${image.image_url}`,
-                            editingLocation?.name || 'image',
-                          )
-                        "
-                      />
-                    </div>
-                  </template>
-                  <v-list-item-title class="mb-2">
-                    <div class="d-flex align-center gap-2">
-                      <v-chip v-if="image.is_primary" size="small" color="primary">
-                        <v-icon start icon="mdi-star" />
-                        Primär
-                      </v-chip>
-                      <span class="text-caption text-medium-emphasis">
-                        {{ new Date(image.created_at).toLocaleDateString('de-DE') }}
-                      </span>
-                    </div>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-text-field
-                      :model-value="image.caption || ''"
-                      placeholder="Beschriftung..."
-                      variant="outlined"
-                      density="compact"
-                      hide-details
-                      @blur="
-                        (e: FocusEvent) =>
-                          updateImageCaption(image.id, (e.target as HTMLInputElement).value)
-                      "
-                      @keyup.enter="(e: KeyboardEvent) => (e.target as HTMLInputElement).blur()"
-                    />
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <div class="d-flex gap-1">
-                      <v-btn
-                        v-if="!image.is_primary"
-                        icon="mdi-star-outline"
-                        variant="text"
-                        size="small"
-                        @click="setPrimaryImage(image.id)"
-                      >
-                        <v-icon>mdi-star-outline</v-icon>
-                        <v-tooltip activator="parent" location="bottom">
-                          Als Primär setzen
-                        </v-tooltip>
-                      </v-btn>
-                      <v-btn
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        @click="deleteImageFromGallery(image.id)"
-                      >
-                        <v-icon>mdi-delete</v-icon>
-                        <v-tooltip activator="parent" location="bottom"> Löschen </v-tooltip>
-                      </v-btn>
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-empty-state
-                v-else
-                icon="mdi-image-off"
-                title="Keine Bilder"
-                text="Lade Bilder hoch, um sie hier zu sehen"
-              />
-            </v-card-text>
-          </v-card>
-
           <v-text-field
             v-model="locationForm.name"
             :label="$t('locations.name')"
@@ -396,6 +273,30 @@
           />
             </v-tabs-window-item>
 
+            <!-- Images Tab -->
+            <v-tabs-window-item value="images">
+              <EntityImageGallery
+                v-if="editingLocation"
+                :entity-id="editingLocation.id"
+                entity-type="Location"
+                :entity-name="editingLocation.name"
+                :entity-description="editingLocation.description || undefined"
+                @preview-image="openImagePreview"
+                @generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
+                @images-updated="handleImagesUpdated"
+              />
+            </v-tabs-window-item>
+
+            <!-- Documents Tab -->
+            <v-tabs-window-item value="documents">
+              <EntityDocuments
+                v-if="editingLocation"
+                :entity-id="editingLocation.id"
+                entity-type="Location"
+                @documents-changed="handleDocumentsChanged"
+              />
+            </v-tabs-window-item>
+
             <!-- NPCs Tab -->
             <v-tabs-window-item value="npcs">
               <LocationNpcsTab
@@ -403,6 +304,80 @@
                 :available-npcs="npcForSelect"
                 @add="addNpcRelation"
                 @remove="removeNpcRelation"
+              />
+            </v-tabs-window-item>
+
+            <!-- Items Tab -->
+            <v-tabs-window-item value="items">
+              <div class="text-h6 mb-4">{{ $t('locations.linkedItems') }}</div>
+
+              <div class="d-flex align-start gap-4 mb-4">
+                <v-autocomplete
+                  v-model="selectedItemToLink"
+                  :items="itemsForSelect"
+                  item-title="name"
+                  item-value="id"
+                  :label="$t('locations.selectItem')"
+                  :placeholder="$t('locations.selectItemPlaceholder')"
+                  variant="outlined"
+                  clearable
+                  style="flex: 1"
+                />
+                <v-btn
+                  color="primary"
+                  :disabled="!selectedItemToLink"
+                  prepend-icon="mdi-link"
+                  @click="addItemRelation"
+                >
+                  {{ $t('locations.linkItem') }}
+                </v-btn>
+              </div>
+
+              <v-list v-if="linkedItems.length > 0">
+                <v-list-item v-for="item in linkedItems" :key="item.id">
+                  <template #prepend>
+                    <v-avatar size="56" rounded="lg" class="mr-3">
+                      <v-img v-if="item.image_url" :src="`/uploads/${item.image_url}`" cover />
+                      <v-icon v-else icon="mdi-treasure-chest" size="28" />
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title>
+                    {{ item.name }}
+                    <v-chip v-if="item.direction === 'incoming'" size="x-small" color="info" class="ml-2">
+                      ←
+                    </v-chip>
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="item.description">
+                    {{ item.description }}
+                  </v-list-item-subtitle>
+                  <template #append>
+                    <v-btn
+                      v-if="item.direction === 'outgoing' || !item.direction"
+                      icon="mdi-delete"
+                      size="small"
+                      variant="text"
+                      @click="removeItemRelation(item.id)"
+                    >
+                      <v-icon>mdi-delete</v-icon>
+                      <v-tooltip activator="parent" location="left">
+                        {{ $t('common.delete') }}
+                      </v-tooltip>
+                    </v-btn>
+                    <v-tooltip v-else location="left">
+                      <template #activator="{ props }">
+                        <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
+                      </template>
+                      {{ $t('locations.incomingItemTooltip') }}
+                    </v-tooltip>
+                  </template>
+                </v-list-item>
+              </v-list>
+
+              <v-empty-state
+                v-else
+                icon="mdi-treasure-chest-outline"
+                :title="$t('locations.noLinkedItems')"
+                :text="$t('locations.noLinkedItemsText')"
               />
             </v-tabs-window-item>
 
@@ -703,6 +678,8 @@
 import LocationNpcsTab from '~/components/locations/LocationNpcsTab.vue'
 import LocationLoreTab from '~/components/locations/LocationLoreTab.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
+import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 
 interface Location {
   id: number
@@ -827,9 +804,10 @@ onMounted(async () => {
   // Load locations from store (cached)
   await entitiesStore.fetchLocations(activeCampaignId.value)
 
-  // Load NPCs and Lore for linking
+  // Load NPCs, Lore, and Items for linking
   await entitiesStore.fetchNPCs(activeCampaignId.value)
   await entitiesStore.fetchLore(activeCampaignId.value)
+  await entitiesStore.fetchItems(activeCampaignId.value)
 
   // Initialize from query params
   initializeFromQuery()
@@ -892,6 +870,17 @@ const loreForSelect = computed(() => {
     .map((lore) => ({
       id: lore.id,
       name: lore.name,
+    }))
+})
+
+const itemsForSelect = computed(() => {
+  // Filter out already linked Items
+  const linkedItemIds = new Set(linkedItems.value.map((i) => i.id))
+  return (entitiesStore.items || [])
+    .filter((item) => !linkedItemIds.has(item.id))
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
     }))
 })
 
@@ -1196,6 +1185,17 @@ const locationDialogTab = ref('details')
 // NPC & Lore linking
 const linkedNpcs = ref<Array<{ id: number; name: string; description: string | null; image_url: string | null }>>([])
 const linkedLore = ref<Array<{ id: number; name: string; description: string | null; image_url: string | null }>>([])
+const linkedItems = ref<
+  Array<{
+    id: number
+    name: string
+    description: string | null
+    image_url: string | null
+    direction?: 'outgoing' | 'incoming'
+  }>
+>([])
+const selectedItemToLink = ref<number | null>(null)
+const imageGenerating = ref(false)
 
 // Image gallery state
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -1862,6 +1862,85 @@ async function removeLoreRelation(loreId: number) {
   }
 }
 
+// Items linking functions
+async function loadLinkedItems() {
+  if (!editingLocation.value) return
+
+  try {
+    const items = await $fetch<
+      Array<{
+        id: number
+        name: string
+        description: string | null
+        image_url: string | null
+        direction?: 'outgoing' | 'incoming'
+      }>
+    >(`/api/locations/${editingLocation.value.id}/items`)
+    linkedItems.value = items
+  } catch (error) {
+    console.error('Failed to load linked Items:', error)
+  }
+}
+
+async function addItemRelation() {
+  if (!editingLocation.value || !selectedItemToLink.value) return
+
+  try {
+    await $fetch('/api/entity-relations', {
+      method: 'POST',
+      body: {
+        fromEntityId: editingLocation.value.id,
+        toEntityId: selectedItemToLink.value,
+        relationType: 'bezieht sich auf',
+        relationNotes: null,
+      },
+    })
+
+    await loadLinkedItems()
+    selectedItemToLink.value = null
+  } catch (error) {
+    console.error('Failed to add Item relation:', error)
+  }
+}
+
+async function removeItemRelation(itemId: number) {
+  if (!editingLocation.value) return
+
+  try {
+    // Find the relation
+    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
+      query: {
+        fromEntityId: editingLocation.value.id,
+        toEntityId: itemId,
+      },
+    })
+
+    if (relation) {
+      await $fetch(`/api/entity-relations/${relation.id}`, {
+        method: 'DELETE',
+      })
+
+      await loadLinkedItems()
+    }
+  } catch (error) {
+    console.error('Failed to remove Item relation:', error)
+  }
+}
+
+// Handler for EntityImageGallery updates
+function handleImagesUpdated() {
+  if (editingLocation.value) {
+    loadLocationCounts()
+  }
+}
+
+// Handler for EntityDocuments changes
+function handleDocumentsChanged() {
+  if (editingLocation.value) {
+    loadLocationCounts()
+  }
+}
+
 async function confirmDelete() {
   if (!deletingLocation.value || !activeCampaignId.value) return
 
@@ -1895,6 +1974,7 @@ async function confirmDelete() {
 function closeDialog() {
   showCreateDialog.value = false
   editingLocation.value = null
+  linkedItems.value = []
   locationForm.value = {
     name: '',
     description: '',
@@ -1912,7 +1992,7 @@ watch(
   () => editingLocation.value?.id,
   async (locationId) => {
     if (locationId) {
-      await Promise.all([loadLinkedNpcs(), loadLinkedLore(), loadLocationCounts()])
+      await Promise.all([loadLinkedNpcs(), loadLinkedLore(), loadLinkedItems(), loadLocationCounts()])
     } else {
       // Reset counts when dialog closes
       locationCounts.value = null

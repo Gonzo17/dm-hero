@@ -31,18 +31,35 @@
             <v-icon v-else>mdi-book-open-variant</v-icon>
           </v-avatar>
         </template>
-        <v-list-item-title>{{ lore.name }}</v-list-item-title>
+        <v-list-item-title>
+          {{ lore.name }}
+          <v-chip
+            v-if="lore.direction === 'incoming'"
+            size="x-small"
+            color="info"
+            class="ml-2"
+          >
+            ←
+          </v-chip>
+        </v-list-item-title>
         <v-list-item-subtitle v-if="lore.description">
           {{ lore.description.substring(0, 100) }}{{ lore.description.length > 100 ? '...' : '' }}
         </v-list-item-subtitle>
         <template #append>
           <v-btn
+            v-if="lore.direction === 'outgoing' || !lore.direction"
             icon="mdi-delete"
             variant="text"
             size="small"
             color="error"
             @click="$emit('remove', lore.id)"
           />
+          <v-tooltip v-else location="left">
+            <template #activator="{ props }">
+              <v-icon v-bind="props" color="info" size="small"> mdi-information </v-icon>
+            </template>
+            {{ $t('locations.incomingLoreTooltip') }}
+          </v-tooltip>
         </template>
       </v-list-item>
     </v-list>
@@ -61,6 +78,7 @@ interface Lore {
   name: string
   description: string | null
   image_url: string | null
+  direction?: 'outgoing' | 'incoming'
 }
 
 interface Props {

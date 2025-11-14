@@ -105,6 +105,60 @@
           <span>{{ $t('factions.badgeTooltips.members') }}</span>
         </v-tooltip>
 
+        <!-- Items Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-treasure-chest"
+              size="small"
+              variant="outlined"
+              :color="counts.items > 0 ? 'primary' : undefined"
+            >
+              {{ counts.items }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-treasure-chest"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('factions.badgeTooltips.items') }}</span>
+        </v-tooltip>
+
+        <!-- Locations Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-map-marker"
+              size="small"
+              variant="outlined"
+              :color="counts.locations > 0 ? 'primary' : undefined"
+            >
+              {{ counts.locations }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-map-marker"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('factions.badgeTooltips.locations') }}</span>
+        </v-tooltip>
+
         <!-- Lore Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">

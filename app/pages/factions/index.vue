@@ -57,7 +57,7 @@
             :is-highlighted="highlightedId === faction.id"
             @view="viewFaction"
             @edit="editFaction"
-            @download="(faction) => downloadImage(`/uploads/${faction.image_url}`, faction.name)"
+            @download="(faction: Faction) => downloadImage(`/uploads/${faction.image_url}`, faction.name)"
             @delete="deleteFaction"
           />
         </v-col>
@@ -104,9 +104,21 @@
             <v-icon start> mdi-shield-account </v-icon>
             {{ $t('factions.details') }}
           </v-tab>
+          <v-tab value="images">
+            <v-icon start> mdi-image-multiple </v-icon>
+            {{ $t('common.images') }} ({{ editingFaction._counts?.images ?? 0 }})
+          </v-tab>
+          <v-tab value="documents">
+            <v-icon start> mdi-file-document </v-icon>
+            {{ $t('documents.title') }} ({{ editingFaction._counts?.documents ?? 0 }})
+          </v-tab>
           <v-tab value="members">
             <v-icon start> mdi-account-group </v-icon>
             {{ $t('factions.members') }} ({{ factionMembers.length }})
+          </v-tab>
+          <v-tab value="items">
+            <v-icon start> mdi-treasure-chest </v-icon>
+            {{ $t('items.title') }} ({{ linkedItems.length }})
           </v-tab>
           <v-tab value="locations">
             <v-icon start> mdi-map-marker </v-icon>
@@ -252,7 +264,7 @@
               <v-text-field
                 v-model="factionForm.name"
                 :label="$t('factions.name')"
-                :rules="[(v) => !!v || $t('factions.nameRequired')]"
+                :rules="[(v: string) => !!v || $t('factions.nameRequired')]"
                 variant="outlined"
                 class="mb-4"
               />
@@ -320,6 +332,30 @@
                 :label="$t('factions.notes')"
                 variant="outlined"
                 rows="3"
+              />
+            </v-tabs-window-item>
+
+            <!-- Images Tab -->
+            <v-tabs-window-item value="images">
+              <EntityImageGallery
+                v-if="editingFaction"
+                :entity-id="editingFaction.id"
+                entity-type="Faction"
+                :entity-name="editingFaction.name"
+                :entity-description="editingFaction.description || undefined"
+                @preview-image="openImagePreview"
+                @generating="(isGenerating: boolean) => (imageGenerating = isGenerating)"
+                @images-updated="handleImagesUpdated"
+              />
+            </v-tabs-window-item>
+
+            <!-- Documents Tab -->
+            <v-tabs-window-item value="documents">
+              <EntityDocuments
+                v-if="editingFaction"
+                :entity-id="editingFaction.id"
+                entity-type="Faction"
+                @changed="handleDocumentsChanged"
               />
             </v-tabs-window-item>
 
@@ -407,6 +443,90 @@
                 @click="addNpcMember"
               >
                 {{ $t('factions.addMember') }}
+              </v-btn>
+            </v-tabs-window-item>
+
+            <!-- Items Tab -->
+            <v-tabs-window-item value="items">
+              <div class="text-h6 mb-4">
+                {{ $t('factions.linkedItems') }}
+              </div>
+
+              <v-list v-if="linkedItems.length > 0">
+                <v-list-item v-for="item in linkedItems" :key="item.id" class="mb-2" border>
+                  <template #prepend>
+                    <v-avatar v-if="item.image_url" size="40" rounded="lg">
+                      <v-img :src="`/uploads/${item.image_url}`" />
+                    </v-avatar>
+                    <v-icon v-else icon="mdi-treasure-chest" color="primary" />
+                  </template>
+                  <v-list-item-title>
+                    {{ item.name }}
+                    <v-chip
+                      v-if="item.direction === 'incoming'"
+                      size="x-small"
+                      color="info"
+                      class="ml-2"
+                    >
+                      ←
+                    </v-chip>
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="item.description">
+                    {{ item.description.substring(0, 100) }}{{ item.description.length > 100 ? '...' : '' }}
+                  </v-list-item-subtitle>
+                  <template #append>
+                    <v-btn
+                      v-if="item.direction === 'outgoing' || !item.direction"
+                      icon="mdi-delete"
+                      variant="text"
+                      size="small"
+                      color="error"
+                      @click="removeItemRelation(item.id)"
+                    />
+                    <v-tooltip v-else location="left">
+                      <template #activator="{ props }">
+                        <v-icon v-bind="props" color="info" size="small">
+                          mdi-information
+                        </v-icon>
+                      </template>
+                      {{ $t('factions.incomingItemTooltip') }}
+                    </v-tooltip>
+                  </template>
+                </v-list-item>
+              </v-list>
+
+              <v-empty-state
+                v-else
+                icon="mdi-treasure-chest"
+                :title="$t('factions.noLinkedItems')"
+                :text="$t('factions.noLinkedItemsText')"
+              />
+
+              <v-divider class="my-4" />
+
+              <div class="text-h6 mb-4">
+                {{ $t('factions.addItem') }}
+              </div>
+
+              <v-autocomplete
+                v-model="selectedItemToLink"
+                :items="itemsForSelect"
+                item-title="name"
+                item-value="id"
+                :label="$t('factions.selectItem')"
+                :placeholder="$t('factions.selectItemPlaceholder')"
+                variant="outlined"
+                clearable
+                class="mb-2"
+              />
+
+              <v-btn
+                color="primary"
+                block
+                :disabled="!selectedItemToLink"
+                @click="addItemRelation"
+              >
+                {{ $t('factions.linkItem') }}
               </v-btn>
             </v-tabs-window-item>
 
@@ -564,7 +684,7 @@
             <v-text-field
               v-model="factionForm.name"
               :label="$t('factions.name')"
-              :rules="[(v) => !!v || $t('factions.nameRequired')]"
+              :rules="[(v: string) => !!v || $t('factions.nameRequired')]"
               variant="outlined"
               class="mb-4"
             />
@@ -679,6 +799,8 @@
 <script setup lang="ts">
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import FactionCard from '~/components/factions/FactionCard.vue'
+import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 
 interface Faction {
   id: number
@@ -757,6 +879,7 @@ onMounted(async () => {
     entitiesStore.fetchFactions(activeCampaignId.value),
     entitiesStore.fetchLocations(activeCampaignId.value),
     entitiesStore.fetchNPCs(activeCampaignId.value),
+    entitiesStore.fetchItems(activeCampaignId.value),
     entitiesStore.fetchLore(activeCampaignId.value),
   ])
 
@@ -939,9 +1062,29 @@ const addingLocation = ref(false)
 const linkedLore = ref<Array<{ id: number; name: string; description: string | null; image_url: string | null }>>([])
 const selectedLoreToLink = ref<number | null>(null)
 
-// Get locations, NPCs, and Lore from store
+// Items state
+const linkedItems = ref<
+  Array<{
+    id: number
+    name: string
+    description: string | null
+    image_url: string | null
+    direction?: 'outgoing' | 'incoming'
+  }>
+>([])
+const selectedItemToLink = ref<number | null>(null)
+
+const imageGenerating = ref(false)
+
+// Get locations, NPCs, Items, and Lore from store
 const locations = computed(() => entitiesStore.locationsForSelect)
 const npcs = computed(() => entitiesStore.npcsForSelect)
+const itemsForSelect = computed(() => {
+  return (entitiesStore.items || []).map((item) => ({
+    id: item.id,
+    name: item.name,
+  }))
+})
 const loreForSelect = computed(() => {
   return (entitiesStore.lore || []).map((lore) => ({
     id: lore.id,
@@ -1003,10 +1146,14 @@ async function editFaction(faction: Faction) {
   showCreateDialog.value = true
   factionDialogTab.value = 'details'
 
-  // Load faction members, locations, and lore
-  await loadFactionMembers()
-  await loadFactionLocations()
-  await loadLinkedLore()
+  // Load faction members, locations, items, lore, and counts
+  await Promise.all([
+    loadFactionMembers(),
+    loadFactionLocations(),
+    loadLinkedItems(),
+    loadLinkedLore(),
+    reloadFactionCounts(faction),
+  ])
 }
 
 function deleteFaction(faction: Faction) {
@@ -1237,6 +1384,64 @@ async function addLoreRelation() {
   }
 }
 
+// Items functions
+async function loadLinkedItems() {
+  if (!editingFaction.value) return
+  try {
+    const items = await $fetch<
+      Array<{
+        id: number
+        name: string
+        description: string | null
+        image_url: string | null
+        direction?: 'outgoing' | 'incoming'
+      }>
+    >(`/api/factions/${editingFaction.value.id}/items`)
+    linkedItems.value = items
+  } catch (error) {
+    console.error('Failed to load linked Items:', error)
+  }
+}
+
+async function addItemRelation() {
+  if (!editingFaction.value || !selectedItemToLink.value) return
+  try {
+    await $fetch('/api/entity-relations', {
+      method: 'POST',
+      body: {
+        fromEntityId: editingFaction.value.id,
+        toEntityId: selectedItemToLink.value,
+        relationType: 'bezieht sich auf',
+        relationNotes: null,
+      },
+    })
+    await loadLinkedItems()
+    selectedItemToLink.value = null
+  } catch (error) {
+    console.error('Failed to add Item relation:', error)
+  }
+}
+
+async function removeItemRelation(itemId: number) {
+  if (!editingFaction.value) return
+  try {
+    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
+      query: {
+        fromEntityId: editingFaction.value.id,
+        toEntityId: itemId,
+      },
+    })
+    if (relation) {
+      await $fetch(`/api/entity-relations/${relation.id}`, {
+        method: 'DELETE',
+      })
+      await loadLinkedItems()
+    }
+  } catch (error) {
+    console.error('Failed to remove Item relation:', error)
+  }
+}
+
 async function removeLoreRelation(loreId: number) {
   if (!editingFaction.value) return
   try {
@@ -1437,11 +1642,27 @@ async function deleteImage() {
   }
 }
 
+// Handle images updated event (from EntityImageGallery)
+async function handleImagesUpdated() {
+  if (editingFaction.value) {
+    await reloadFactionCounts(editingFaction.value)
+  }
+}
+
+// Handle documents changed event (from EntityDocuments)
+async function handleDocumentsChanged() {
+  if (editingFaction.value) {
+    await reloadFactionCounts(editingFaction.value)
+  }
+}
+
 function closeDialog() {
   showCreateDialog.value = false
   editingFaction.value = null
   factionMembers.value = []
   factionLocations.value = []
+  linkedItems.value = []
+  linkedLore.value = []
   newMember.value = { npcId: null, membershipType: '', rank: '' }
   newLocation.value = { locationId: null, relationType: '' }
   factionDialogTab.value = 'details'

@@ -103,10 +103,45 @@ export default defineEventHandler((event) => {
     )
     .get(Number(itemId)) as { count: number }
 
+  // Get factions count (bidirectional - Factions linked to/from this item)
+  const factionTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Faction'").get() as
+    | { id: number }
+    | undefined
+
+  let factionsCount = 0
+  if (factionTypeId) {
+    const factionsResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(itemId), factionTypeId.id, Number(itemId), factionTypeId.id) as { count: number }
+    factionsCount = factionsResult.count
+  }
+
   return {
     owners: ownersCount,
     locations: locationsCount,
     lore: loreCount,
+    factions: factionsCount,
     documents: documentsCount.count,
     images: imagesCount.count,
   }

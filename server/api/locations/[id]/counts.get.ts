@@ -59,8 +59,67 @@ export default defineEventHandler((event) => {
     loreCount = loreResult.count
   }
 
+  // Get items count (bidirectional - Items linked to/from this location)
+  const itemTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'Item'").get() as
+    | { id: number }
+    | undefined
+
+  let itemsCount = 0
+  if (itemTypeId) {
+    const itemsResult = db
+      .prepare(
+        `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
+    `,
+      )
+      .get(Number(locationId), itemTypeId.id, Number(locationId), itemTypeId.id) as { count: number }
+    itemsCount = itemsResult.count
+  }
+
+  // Get documents count
+  const documentsCount = db
+    .prepare(
+      `
+    SELECT COUNT(*) as count
+    FROM entity_documents
+    WHERE entity_id = ?
+  `,
+    )
+    .get(Number(locationId)) as { count: number }
+
+  // Get images count
+  const imagesCount = db
+    .prepare(
+      `
+    SELECT COUNT(*) as count
+    FROM entity_images
+    WHERE entity_id = ?
+  `,
+    )
+    .get(Number(locationId)) as { count: number }
+
   return {
     npcs: npcsCount,
     lore: loreCount,
+    items: itemsCount,
+    documents: documentsCount.count,
+    images: imagesCount.count,
   }
 })

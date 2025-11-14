@@ -259,6 +259,7 @@
       "documents": "Documents & Notes",
       "images": "Image Gallery",
       "items": "Items Owned",
+      "lore": "Linked Lore",
       "memberships": "Faction Memberships"
     }
   },
@@ -328,6 +329,8 @@
     "deleteImageError": "Failed to delete image",
     "badgeTooltips": {
       "members": "Members (NPCs)",
+      "items": "Linked Items",
+      "locations": "Linked Locations",
       "lore": "Linked Lore",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
@@ -374,7 +377,15 @@
     "addLore": "Add Lore",
     "selectLore": "Select Lore",
     "selectLorePlaceholder": "Choose a lore entry",
-    "linkLore": "Link"
+    "linkLore": "Link",
+    "linkedItems": "Linked Items",
+    "noLinkedItems": "No Linked Items",
+    "noLinkedItemsText": "This faction has no linked items yet.",
+    "addItem": "Add Item",
+    "selectItem": "Select Item",
+    "selectItemPlaceholder": "Choose an item",
+    "linkItem": "Link Item",
+    "incomingItemTooltip": "Relation created by the item"
   },
   "lore": {
     "title": "Lore",
@@ -415,6 +426,14 @@
     "addRelation": "Link",
     "noLinkedLore": "No linked lore",
     "noLinkedLoreText": "This NPC has no linked lore entries yet.",
+    "linkedNpcs": "Linked NPCs",
+    "noLinkedNpcs": "No Linked NPCs",
+    "noLinkedNpcsText": "This lore entry has no linked NPCs yet.",
+    "addNpc": "Add NPC",
+    "selectNpc": "Select NPC",
+    "selectNpcPlaceholder": "Choose an NPC",
+    "linkNpc": "Link",
+    "incomingNpcTooltip": "Relation created by the NPC",
     "linkedFactions": "Linked Factions",
     "noLinkedFactions": "No Linked Factions",
     "noLinkedFactionsText": "This lore entry has no linked factions yet.",
@@ -427,10 +446,18 @@
     "noLinkedItemsText": "This lore entry has no linked items yet.",
     "selectItem": "Select Item",
     "linkItem": "Link Item",
+    "linkedLocations": "Linked Locations",
+    "noLinkedLocations": "No Linked Locations",
+    "noLinkedLocationsText": "This lore entry has no linked locations yet.",
+    "selectLocation": "Select Location",
+    "selectLocationPlaceholder": "Choose a location",
+    "linkLocation": "Link Location",
+    "incomingLocationTooltip": "Relation created by the location",
     "badgeTooltips": {
       "npcs": "Linked NPCs",
       "items": "Linked Items",
       "factions": "Linked Factions",
+      "locations": "Linked Locations",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
     }
@@ -495,12 +522,20 @@
     "noLinkedLoreText": "This location is not yet linked to any lore.",
     "addLoreRelationError": "Failed to add lore relation",
     "removeLoreRelationError": "Failed to remove lore relation",
+    "linkedItems": "Linked Items",
+    "selectItemPlaceholder": "Choose an item",
+    "linkItem": "Link Item",
+    "noLinkedItems": "No Linked Items",
+    "noLinkedItemsText": "This location has no linked items yet.",
+    "incomingItemTooltip": "Relation created by the item",
     "badgeTooltips": {
       "npcs": "Linked NPCs",
+      "items": "Linked Items",
       "documents": "Documents & Notes",
       "images": "Image Gallery",
       "lore": "Linked Lore"
-    }
+    },
+    "incomingLoreTooltip": "Relation created by the lore entry"
   },
   "items": {
     "title": "Items",
@@ -620,9 +655,13 @@
     "deleteImageError": "Failed to delete image",
     "saveBeforeGenerating": "Details changed - save first",
     "documents": "Documents",
+    "noLinkedFactions": "No Linked Factions",
+    "noLinkedFactionsText": "This item has no linked factions yet.",
+    "incomingFactionTooltip": "Relation created by the faction",
     "badgeTooltips": {
       "owners": "Owners (NPCs)",
       "locations": "Locations",
+      "factions": "Linked Factions",
       "lore": "Linked Lore",
       "documents": "Documents & Notes",
       "images": "Image Gallery"
