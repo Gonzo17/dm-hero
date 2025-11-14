@@ -3,6 +3,9 @@
     <v-app-bar-title>
       <v-icon icon="mdi-dice-d20" class="mr-2" />
       DM Hero
+      <v-chip size="x-small" variant="outlined" class="ml-2">
+        v{{ version }}
+      </v-chip>
     </v-app-bar-title>
 
     <v-spacer />
@@ -37,6 +40,7 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import packageJson from '../../../package.json'
 
 interface Props {
   currentLocale: string
@@ -48,6 +52,8 @@ defineEmits<{
   'change-locale': [locale: string]
   'search-click': []
 }>()
+
+const version = packageJson.version
 
 const locales = [
   { value: 'de', label: 'Deutsch', flagIcon: 'flag:de-4x3' },
