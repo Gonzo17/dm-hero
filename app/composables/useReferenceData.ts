@@ -6,8 +6,8 @@
 interface ReferenceData {
   name: string
   key?: string // i18n key (e.g., "human", "elf")
-  name_de?: string | null
-  name_en?: string | null
+  name_de?: string | null | undefined
+  name_en?: string | null | undefined
 }
 
 export function useRaceName(race: ReferenceData) {

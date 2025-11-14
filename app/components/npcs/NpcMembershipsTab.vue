@@ -16,7 +16,10 @@
           <v-chip size="small" class="mr-1">
             {{ membership.relation_type }}
           </v-chip>
-          <span v-if="membership.notes?.rank" class="text-caption">
+          <span
+            v-if="membership.notes && typeof membership.notes === 'object' && 'rank' in membership.notes"
+            class="text-caption"
+          >
             {{ $t('npcs.rank') }}: {{ membership.notes.rank }}
           </span>
         </v-list-item-subtitle>
@@ -94,11 +97,13 @@
 <script setup lang="ts">
 interface Membership {
   id: number
+  from_entity_id: number
+  to_entity_id: number
   to_entity_name: string
+  to_entity_type: string
   relation_type: string
-  notes?: {
-    rank?: string
-  } | null
+  notes: Record<string, unknown> | null
+  created_at: string
 }
 
 interface Faction {

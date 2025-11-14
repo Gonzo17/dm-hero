@@ -319,8 +319,8 @@ import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 interface Props {
   npc: NPC
   isHighlighted?: boolean
-  races?: Array<{ name: string; name_de?: string; name_en?: string }>
-  classes?: Array<{ name: string; name_de?: string; name_en?: string }>
+  races?: Array<{ name: string; name_de?: string | null; name_en?: string | null }>
+  classes?: Array<{ name: string; name_de?: string | null; name_en?: string | null }>
 }
 
 const props = withDefaults(defineProps<Props>(), {

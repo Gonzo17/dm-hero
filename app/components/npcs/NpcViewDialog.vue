@@ -372,8 +372,8 @@ import type { NPC } from '~~/types/npc'
 interface Props {
   show: boolean
   npc: NPC | null
-  races?: Array<{ name: string; name_de?: string; name_en?: string }>
-  classes?: Array<{ name: string; name_de?: string; name_en?: string }>
+  races?: Array<{ name: string; name_de?: string | null; name_en?: string | null }>
+  classes?: Array<{ name: string; name_de?: string | null; name_en?: string | null }>
   canGoBack?: boolean
 }
 

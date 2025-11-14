@@ -116,13 +116,17 @@ const { t } = useI18n()
 
 interface NpcRelation {
   id: number
-  related_npc_name?: string | null
-  to_entity_name?: string | null
-  related_npc_type?: string | null
-  to_entity_type?: string | null
+  related_npc_id: number
+  related_npc_name: string
+  related_npc_type: string
   relation_type: string
-  notes?: string | null
-  direction?: 'incoming' | 'outgoing'
+  notes: string | null
+  image_url: string | null
+  direction: 'outgoing' | 'incoming'
+  // Legacy fields for backwards compat with locations
+  to_entity_id?: number
+  to_entity_name?: string
+  to_entity_type?: string
 }
 
 interface AvailableNpc {
@@ -138,7 +142,8 @@ interface Props {
 
 interface Emits {
   (e: 'add', payload: { npcId: number; relationType: string; notes?: string }): void
-  (e: 'edit' | 'remove', relation: NpcRelation | number): void
+  (e: 'edit', relation: NpcRelation): void
+  (e: 'remove', relationId: number): void
 }
 
 defineProps<Props>()

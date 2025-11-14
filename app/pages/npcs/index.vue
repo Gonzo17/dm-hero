@@ -891,15 +891,15 @@
 <script setup lang="ts">
 import type { NPC, NpcType, NpcStatus } from '../../../types/npc'
 import { NPC_TYPES, NPC_STATUSES } from '../../../types/npc'
-import NpcCard from '~/components/npcs/NpcCard.vue'
-import NpcViewDialog from '~/components/npcs/NpcViewDialog.vue'
+import NpcCard from '../../components/npcs/NpcCard.vue'
+import NpcViewDialog from '../../components/npcs/NpcViewDialog.vue'
 import NpcRelationsTab from '~/components/npcs/NpcRelationsTab.vue'
-import NpcLocationsTab from '~/components/npcs/NpcLocationsTab.vue'
-import NpcMembershipsTab from '~/components/npcs/NpcMembershipsTab.vue'
-import NpcItemsTab from '~/components/npcs/NpcItemsTab.vue'
-import NpcLoreTab from '~/components/npcs/NpcLoreTab.vue'
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
-import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
+import NpcLocationsTab from '../../components/npcs/NpcLocationsTab.vue'
+import NpcMembershipsTab from '../../components/npcs/NpcMembershipsTab.vue'
+import NpcItemsTab from '../../components/npcs/NpcItemsTab.vue'
+import NpcLoreTab from '../../components/npcs/NpcLoreTab.vue'
+import EntityDocuments from '../../components/shared/EntityDocuments.vue'
+import ImagePreviewDialog from '../../components/shared/ImagePreviewDialog.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -2549,6 +2549,7 @@ function getNpcStatusColor(status: string): string {
 /* NPC Description - Fixed 3 lines */
 .npc-description {
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
