@@ -10,6 +10,7 @@ interface DbItem {
   item_name: string
   item_description: string | null
   item_metadata: string | null
+  item_image_url: string | null
   direction: 'outgoing' | 'incoming'
 }
 
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
       e.name as item_name,
       e.description as item_description,
       e.metadata as item_metadata,
+      e.image_url as item_image_url,
       'outgoing' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.to_entity_id = e.id
@@ -59,6 +61,7 @@ export default defineEventHandler(async (event) => {
       e.name as item_name,
       e.description as item_description,
       e.metadata as item_metadata,
+      e.image_url as item_image_url,
       'incoming' as direction
     FROM entity_relations er
     INNER JOIN entities e ON er.from_entity_id = e.id
@@ -73,8 +76,16 @@ export default defineEventHandler(async (event) => {
     .all(locationId, locationId)
 
   return items.map((item) => ({
-    ...item,
+    id: item.id,
+    from_entity_id: item.from_entity_id,
+    to_entity_id: item.to_entity_id,
+    relation_type: item.relation_type,
     notes: item.notes ? JSON.parse(item.notes) : null,
-    item_metadata: item.item_metadata ? JSON.parse(item.item_metadata) : null,
+    created_at: item.created_at,
+    name: item.item_name,
+    description: item.item_description,
+    metadata: item.item_metadata ? JSON.parse(item.item_metadata) : null,
+    image_url: item.item_image_url,
+    direction: item.direction,
   }))
 })

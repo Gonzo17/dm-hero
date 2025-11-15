@@ -154,6 +154,33 @@
           <span>{{ $t('npcs.badgeTooltips.items') }}</span>
         </v-tooltip>
 
+        <!-- Locations Count Badge -->
+        <v-tooltip location="top">
+          <template #activator="{ props: tooltipProps }">
+            <v-chip
+              v-if="counts"
+              v-bind="tooltipProps"
+              prepend-icon="mdi-map-marker"
+              size="small"
+              variant="outlined"
+              :color="(counts.locations || 0) > 0 ? 'primary' : undefined"
+            >
+              {{ counts.locations || 0 }}
+            </v-chip>
+            <v-chip
+              v-else
+              v-bind="tooltipProps"
+              prepend-icon="mdi-map-marker"
+              size="small"
+              variant="outlined"
+              disabled
+            >
+              <v-progress-circular indeterminate size="12" width="2" />
+            </v-chip>
+          </template>
+          <span>{{ $t('npcs.badgeTooltips.locations') }}</span>
+        </v-tooltip>
+
         <!-- Documents Count Badge -->
         <v-tooltip location="top">
           <template #activator="{ props: tooltipProps }">

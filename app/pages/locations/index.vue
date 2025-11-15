@@ -293,7 +293,7 @@
                 v-if="editingLocation"
                 :entity-id="editingLocation.id"
                 entity-type="Location"
-                @documents-changed="handleDocumentsChanged"
+                @changed="handleDocumentsChanged"
               />
             </v-tabs-window-item>
 
@@ -309,91 +309,11 @@
 
             <!-- Items Tab -->
             <v-tabs-window-item value="items">
-              <div class="text-h6 mb-4">{{ $t('locations.linkedItems') }}</div>
-
-              <div class="d-flex flex-column gap-4 mb-4">
-                <div class="d-flex align-start gap-4">
-                  <v-autocomplete
-                    v-model="selectedItemToLink"
-                    :items="itemsForSelect"
-                    item-title="name"
-                    item-value="id"
-                    :label="$t('locations.selectItem')"
-                    :placeholder="$t('locations.selectItemPlaceholder')"
-                    variant="outlined"
-                    clearable
-                    style="flex: 1"
-                  />
-                  <v-select
-                    v-model="selectedItemRelationType"
-                    :items="[
-                      { value: 'contains', title: $t('locations.itemRelationTypes.contains') },
-                      { value: 'hidden', title: $t('locations.itemRelationTypes.hidden') },
-                      { value: 'displayed', title: $t('locations.itemRelationTypes.displayed') },
-                      { value: 'stored', title: $t('locations.itemRelationTypes.stored') },
-                      { value: 'lost', title: $t('locations.itemRelationTypes.lost') },
-                      { value: 'guarded', title: $t('locations.itemRelationTypes.guarded') },
-                    ]"
-                    :label="$t('locations.relationType')"
-                    variant="outlined"
-                    style="flex: 1"
-                  />
-                  <v-btn
-                    color="primary"
-                    :disabled="!selectedItemToLink || !selectedItemRelationType"
-                    prepend-icon="mdi-link"
-                    @click="addItemRelation"
-                  >
-                    {{ $t('locations.linkItem') }}
-                  </v-btn>
-                </div>
-              </div>
-
-              <v-list v-if="linkedItems.length > 0">
-                <v-list-item v-for="item in linkedItems" :key="item.id">
-                  <template #prepend>
-                    <v-avatar size="56" rounded="lg" class="mr-3">
-                      <v-img v-if="item.image_url" :src="`/uploads/${item.image_url}`" cover />
-                      <v-icon v-else icon="mdi-treasure-chest" size="28" />
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>
-                    {{ item.name }}
-                    <v-chip v-if="item.direction === 'incoming'" size="x-small" color="info" class="ml-2">
-                      ←
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle v-if="item.description">
-                    {{ item.description }}
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      v-if="item.direction === 'outgoing' || !item.direction"
-                      icon="mdi-delete"
-                      size="small"
-                      variant="text"
-                      @click="removeItemRelation(item.id)"
-                    >
-                      <v-icon>mdi-delete</v-icon>
-                      <v-tooltip activator="parent" location="left">
-                        {{ $t('common.delete') }}
-                      </v-tooltip>
-                    </v-btn>
-                    <v-tooltip v-else location="left">
-                      <template #activator="{ props }">
-                        <v-icon v-bind="props" color="info" size="small">mdi-information</v-icon>
-                      </template>
-                      {{ $t('locations.incomingItemTooltip') }}
-                    </v-tooltip>
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-empty-state
-                v-else
-                icon="mdi-treasure-chest-outline"
-                :title="$t('locations.noLinkedItems')"
-                :text="$t('locations.noLinkedItemsText')"
+              <LocationItemsTab
+                :linked-items="linkedItems"
+                :available-items="itemsForSelect"
+                @add="addItemRelation"
+                @remove="removeItemRelation"
               />
             </v-tabs-window-item>
 
@@ -762,6 +682,7 @@
 <script setup lang="ts">
 import LocationNpcsTab from '~/components/locations/LocationNpcsTab.vue'
 import LocationLoreTab from '~/components/locations/LocationLoreTab.vue'
+import LocationItemsTab from '~/components/locations/LocationItemsTab.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
@@ -1273,8 +1194,6 @@ const linkedItems = ref<
     direction?: 'outgoing' | 'incoming'
   }>
 >([])
-const selectedItemToLink = ref<number | null>(null)
-const selectedItemRelationType = ref<string>('contains')
 const imageGenerating = ref(false)
 
 // Image gallery state
@@ -1553,25 +1472,6 @@ const locationLore = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
 const loadingLore = ref(false)
-const showAddItemForm = ref(false)
-const addingItem = ref(false)
-
-const newItem = ref({
-  itemId: null as number | null,
-  relationType: '',
-  quantity: 1,
-})
-
-const items = computed(() => entitiesStore.itemsForSelect)
-
-const itemRelationTypeSuggestions = computed(() => [
-  t('locations.itemRelationTypes.contains'),
-  t('locations.itemRelationTypes.hidden'),
-  t('locations.itemRelationTypes.displayed'),
-  t('locations.itemRelationTypes.stored'),
-  t('locations.itemRelationTypes.lost'),
-  t('locations.itemRelationTypes.guarded'),
-])
 
 // Available parent locations (exclude current location to prevent circular references)
 const availableParentLocations = computed(() => {
@@ -1637,55 +1537,6 @@ async function loadLocationItems() {
   } finally {
     loadingItems.value = false
   }
-}
-
-async function addItemToLocation() {
-  if (!viewingLocation.value || !newItem.value.itemId || !newItem.value.relationType) return
-
-  addingItem.value = true
-
-  try {
-    await $fetch(`/api/locations/${viewingLocation.value.id}/items`, {
-      method: 'POST',
-      body: {
-        itemId: newItem.value.itemId,
-        relationType: newItem.value.relationType,
-        quantity: newItem.value.quantity || undefined,
-      },
-    })
-
-    await loadLocationItems()
-    resetItemForm()
-    showAddItemForm.value = false
-  } catch (error) {
-    console.error('Failed to add item to location:', error)
-  } finally {
-    addingItem.value = false
-  }
-}
-
-async function removeItem(relationId: number) {
-  try {
-    await $fetch(`/api/relations/${relationId}`, {
-      method: 'DELETE',
-    })
-    await loadLocationItems()
-  } catch (error) {
-    console.error('Failed to remove item:', error)
-  }
-}
-
-function resetItemForm() {
-  newItem.value = {
-    itemId: null,
-    relationType: '',
-    quantity: 1,
-  }
-}
-
-function cancelAddItem() {
-  showAddItemForm.value = false
-  resetItemForm()
 }
 
 async function editLocation(location: Location) {
@@ -1986,23 +1837,21 @@ async function loadLinkedItems() {
   }
 }
 
-async function addItemRelation() {
-  if (!editingLocation.value || !selectedItemToLink.value || !selectedItemRelationType.value) return
+async function addItemRelation(payload: { itemId: number; relationType: string }) {
+  if (!editingLocation.value || !payload.itemId || !payload.relationType) return
 
   try {
     await $fetch('/api/entity-relations', {
       method: 'POST',
       body: {
         fromEntityId: editingLocation.value.id,
-        toEntityId: selectedItemToLink.value,
-        relationType: selectedItemRelationType.value,
+        toEntityId: payload.itemId,
+        relationType: payload.relationType,
         relationNotes: null,
       },
     })
 
     await loadLinkedItems()
-    selectedItemToLink.value = null
-    selectedItemRelationType.value = 'contains' // Reset to default
   } catch (error) {
     console.error('Failed to add Item relation:', error)
   }

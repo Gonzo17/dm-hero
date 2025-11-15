@@ -899,6 +899,7 @@ const newNpcRelation = ref({
 })
 
 const addingNpcRelation = ref(false)
+const addingLocationRelation = ref(false)
 
 // Relation editing state
 const showEditRelationDialog = ref(false)
@@ -1155,8 +1156,8 @@ async function loadAllRelations() {
   }
 }
 
-async function addFactionMembership() {
-  if (!editingNpc.value || !newMembership.value.factionId || !newMembership.value.relationType)
+async function addFactionMembership(payload: { factionId: number; relationType: string; rank?: string }) {
+  if (!editingNpc.value || !payload.factionId || !payload.relationType)
     return
 
   addingMembership.value = true
@@ -1165,19 +1166,17 @@ async function addFactionMembership() {
     await $fetch(`/api/npcs/${editingNpc.value.id}/relations`, {
       method: 'POST',
       body: {
-        toEntityId: newMembership.value.factionId,
-        relationType: newMembership.value.relationType,
-        notes: newMembership.value.rank ? { rank: newMembership.value.rank } : null,
+        toEntityId: payload.factionId,
+        relationType: payload.relationType,
+        notes: payload.rank ? { rank: payload.rank } : null,
       },
     })
 
     await loadAllRelations()
 
-    // Reset form
-    newMembership.value = {
-      factionId: null,
-      relationType: '',
-      rank: '',
+    // Reload counts to update memberships count badge
+    if (editingNpc.value) {
+      await reloadNpcCounts(editingNpc.value)
     }
   } catch (error) {
     console.error('Failed to add faction membership:', error)
@@ -1256,8 +1255,8 @@ async function loadNpcItems() {
   }
 }
 
-async function addItemToNpc() {
-  if (!editingNpc.value || !newItem.value.itemId || !newItem.value.relationType) return
+async function addItemToNpc(payload: { itemId: number; relationType: string; quantity?: number; equipped: boolean }) {
+  if (!editingNpc.value || !payload.itemId || !payload.relationType) return
 
   addingItem.value = true
 
@@ -1265,24 +1264,18 @@ async function addItemToNpc() {
     await $fetch(`/api/npcs/${editingNpc.value.id}/items`, {
       method: 'POST',
       body: {
-        itemId: newItem.value.itemId,
-        relationType: newItem.value.relationType,
-        quantity: newItem.value.quantity || undefined,
-        equipped: newItem.value.equipped,
+        itemId: payload.itemId,
+        relationType: payload.relationType,
+        quantity: payload.quantity || undefined,
+        equipped: payload.equipped,
       },
     })
 
     await loadNpcItems()
 
     // Reload counts for this NPC (item count changed)
-    await reloadNpcCounts(editingNpc.value)
-
-    // Reset form
-    newItem.value = {
-      itemId: null,
-      relationType: '',
-      quantity: 1,
-      equipped: false,
+    if (editingNpc.value) {
+      await reloadNpcCounts(editingNpc.value)
     }
   } catch (error) {
     console.error('Failed to add item to NPC:', error)
@@ -1619,18 +1612,18 @@ async function addNpcRelation() {
   }
 }
 
-async function addLocationRelation() {
-  if (!editingNpc.value || !newRelation.value.locationId) return
+async function addLocationRelation(payload: { locationId: number; relationType: string; notes?: string }) {
+  if (!editingNpc.value || !payload.locationId) return
 
-  addingRelation.value = true
+  addingLocationRelation.value = true
 
   try {
     const relation = await $fetch<Relation>(`/api/npcs/${editingNpc.value.id}/relations`, {
       method: 'POST',
       body: {
-        toEntityId: newRelation.value.locationId,
-        relationType: newRelation.value.relationType || t('npcs.relationTypes.livesIn'),
-        notes: newRelation.value.notes || null,
+        toEntityId: payload.locationId,
+        relationType: payload.relationType || t('npcs.relationTypes.livesIn'),
+        notes: payload.notes || null,
       },
     })
 
@@ -1653,16 +1646,10 @@ async function addLocationRelation() {
     if (editingNpc.value) {
       await reloadNpcCounts(editingNpc.value)
     }
-
-    newRelation.value = {
-      locationId: null,
-      relationType: '',
-      notes: '',
-    }
   } catch (error) {
     console.error('Failed to add relation:', error)
   } finally {
-    addingRelation.value = false
+    addingLocationRelation.value = false
   }
 }
 
