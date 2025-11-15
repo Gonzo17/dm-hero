@@ -8,6 +8,8 @@ interface FactionCounts {
   lore: number
   documents: number
   images: number
+  items: number
+  locations: number
 }
 
 /**

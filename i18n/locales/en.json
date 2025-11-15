@@ -179,7 +179,6 @@
     "npcRelations": "NPC Relations",
     "selectFaction": "Select Faction",
     "addFactionMembership": "Add Faction Membership",
-    "membershipType": "Membership Type",
     "membershipTypePlaceholder": "e.g. Member, Leader",
     "rank": "Rank",
     "rankPlaceholder": "e.g. Captain, Apprentice",
@@ -192,7 +191,6 @@
       "veteran": "Veteran",
       "exile": "Exile"
     },
-    "npcRelations": "NPC Relations",
     "selectNpc": "Select NPC",
     "addNpcRelation": "Add NPC Relation",
     "npcRelationType": "Relation Type",
@@ -296,6 +294,7 @@
     "membershipType": "Membership Type",
     "membershipTypePlaceholder": "e.g. Member, Leader",
     "rankPlaceholder": "e.g. Captain, Apprentice",
+    "noLore": "No Lore",
     "membershipTypes": {
       "member": "Member",
       "leader": "Leader",
@@ -345,7 +344,14 @@
       "arcane": "Arcane",
       "secret": "Secret",
       "mercenary": "Mercenary",
-      "noble": "Noble"
+      "noble": "Noble",
+      "assassins": "Assassins",
+      "druidic": "Druidic",
+      "cult": "Cult",
+      "trade": "Trade",
+      "political": "Political",
+      "pirates": "Pirates",
+      "magical": "Magical"
     },
     "sizes": {
       "tiny": "Tiny (1-5)",
@@ -363,7 +369,16 @@
       "chaotic_neutral": "Chaotic Neutral",
       "lawful_evil": "Lawful Evil",
       "neutral_evil": "Neutral Evil",
-      "chaotic_evil": "Chaotic Evil"
+      "chaotic_evil": "Chaotic Evil",
+      "Rechtschaffen Gut": "Lawful Good",
+      "Neutral Gut": "Neutral Good",
+      "Chaotisch Gut": "Chaotic Good",
+      "Rechtschaffen Neutral": "Lawful Neutral",
+      "Neutral": "True Neutral",
+      "Chaotisch Neutral": "Chaotic Neutral",
+      "Rechtschaffen Böse": "Lawful Evil",
+      "Neutral Böse": "Neutral Evil",
+      "Chaotisch Böse": "Chaotic Evil"
     },
     "oldBadgeTooltips": {
       "relations": "Linked NPCs",
@@ -819,7 +834,10 @@
     "deleteImageError": "Failed to delete image",
     "generateImageError": "Failed to generate image",
     "download": "Download",
-    "noDescription": "No description"
+    "noDescription": "No description",
+    "items": "Items",
+    "locations": "Locations",
+    "lore": "Lore"
   },
   "settings": {
     "title": "Settings",

@@ -305,16 +305,22 @@ interface Faction {
   description: string | null
   image_url?: string | null
   leader_name?: string | null
-  metadata?: {
+  metadata: {
     type?: string
-    size?: string
     alignment?: string
+    headquarters?: string
+    goals?: string
+    notes?: string
   } | null
+  created_at: string
+  updated_at: string
   _counts?: {
     members: number
     lore: number
     documents: number
     images: number
+    items: number
+    locations: number
   }
 }
 
@@ -377,7 +383,7 @@ const previewChips = computed(() => {
 const previewSubtitle = computed(() => {
   const parts = []
   if (props.faction.leader_name) parts.push(`${t('factions.leader')}: ${props.faction.leader_name}`)
-  if (props.faction.metadata?.size) parts.push(t(`factions.sizes.${props.faction.metadata.size}`))
+  // Removed size - not used in metadata anymore
   return parts.join(' • ')
 })
 

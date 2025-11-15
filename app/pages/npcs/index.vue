@@ -106,1023 +106,66 @@
     />
 
     <!-- Create/Edit Dialog -->
-    <v-dialog v-model="showCreateDialog" max-width="900" scrollable>
-      <v-card>
-        <v-card-title>
-          {{ editingNpc ? $t('npcs.edit') : $t('npcs.create') }}
-        </v-card-title>
-
-        <v-tabs v-if="editingNpc" v-model="npcDialogTab" class="mb-4">
-          <v-tab value="details">
-            <v-icon start> mdi-account-details </v-icon>
-            {{ $t('npcs.details') }}
-          </v-tab>
-          <v-tab value="npcRelations">
-            <v-icon start> mdi-account-multiple </v-icon>
-            {{ $t('npcs.npcRelations') }}
-            ({{
-              npcRelations.filter(
-                (r: (typeof npcRelations)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
-              ).length
-            }})
-          </v-tab>
-          <v-tab value="locations">
-            <v-icon start> mdi-map-marker </v-icon>
-            {{ $t('npcs.linkedLocations') }}
-            ({{
-              npcRelations.filter(
-                (r: (typeof npcRelations)[0]) =>
-                  (r.related_npc_type || r.to_entity_type) === 'Location',
-              ).length
-            }})
-          </v-tab>
-          <v-tab value="memberships">
-            <v-icon start> mdi-shield-account </v-icon>
-            {{ $t('npcs.memberships') }} ({{ factionMemberships.length }})
-          </v-tab>
-          <v-tab value="items">
-            <v-icon start> mdi-sword </v-icon>
-            {{ $t('npcs.items') }} ({{ npcItems.length }})
-          </v-tab>
-          <v-tab value="notes">
-            <v-icon start> mdi-note-text </v-icon>
-            {{ $t('npcs.notes') }} ({{ npcNotes.length }})
-          </v-tab>
-          <v-tab value="documents">
-            <v-icon start> mdi-file-document </v-icon>
-            {{ $t('documents.title') }} ({{ editingNpc?._counts?.documents || 0 }})
-          </v-tab>
-          <v-tab value="lore">
-            <v-icon start> mdi-book-open-variant </v-icon>
-            {{ $t('lore.title') }} ({{ linkedLore.length }})
-          </v-tab>
-        </v-tabs>
-
-        <v-card-text style="max-height: 600px">
-          <v-tabs-window v-if="editingNpc" v-model="npcDialogTab">
-            <!-- Details Tab -->
-            <v-tabs-window-item value="details">
-              <!-- Image Upload Section -->
-              <v-card variant="outlined" class="mb-4">
-                <v-card-text>
-                  <div class="d-flex align-center gap-4">
-                    <!-- Image Preview -->
-                    <div style="position: relative">
-                      <v-avatar
-                        size="160"
-                        rounded="lg"
-                        :color="editingNpc?.image_url ? undefined : 'grey-lighten-2'"
-                        :style="editingNpc?.image_url ? 'cursor: pointer;' : ''"
-                        @click="
-                          editingNpc?.image_url
-                            ? openImagePreview(`/uploads/${editingNpc.image_url}`, npcForm.name)
-                            : null
-                        "
-                      >
-                        <v-img
-                          v-if="editingNpc?.image_url"
-                          :src="`/uploads/${editingNpc.image_url}`"
-                          cover
-                          :class="{ 'blur-image': uploadingImage || generatingImage }"
-                        />
-                        <v-icon
-                          v-else-if="!uploadingImage && !generatingImage"
-                          icon="mdi-account"
-                          size="80"
-                          color="grey"
-                        />
-                      </v-avatar>
-                      <v-progress-circular
-                        v-if="uploadingImage || generatingImage"
-                        indeterminate
-                        color="primary"
-                        size="64"
-                        width="6"
-                        style="
-                          position: absolute;
-                          top: 50%;
-                          left: 50%;
-                          transform: translate(-50%, -50%);
-                        "
-                      />
-                    </div>
-
-                    <!-- Image Actions -->
-                    <div class="flex-grow-1" style="max-width: 280px; margin-left: 16px">
-                      <!-- Upload Button -->
-                      <v-btn
-                        prepend-icon="mdi-camera"
-                        color="primary"
-                        variant="tonal"
-                        block
-                        class="mb-2"
-                        :disabled="uploadingImage || deletingImage || generatingImage"
-                        @click="triggerImageUpload"
-                      >
-                        {{
-                          editingNpc?.image_url ? $t('npcs.changeImage') : $t('npcs.uploadImage')
-                        }}
-                      </v-btn>
-                      <input
-                        ref="fileInputRef"
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
-                        style="display: none"
-                        @change="handleImageUpload"
-                      />
-
-                      <!-- AI Generate Button -->
-                      <v-btn
-                        prepend-icon="mdi-creation"
-                        color="primary"
-                        variant="tonal"
-                        block
-                        class="mb-2"
-                        :loading="generatingImage"
-                        :disabled="generateButtonDisabled"
-                        @click="generateImage"
-                      >
-                        {{ $t('npcs.generateImage') }}
-                      </v-btn>
-
-                      <!-- Download Button (only if image exists) -->
-                      <v-btn
-                        v-if="editingNpc?.image_url"
-                        prepend-icon="mdi-download"
-                        variant="outlined"
-                        block
-                        class="mb-2"
-                        :disabled="uploadingImage || generatingImage"
-                        @click="downloadImage(`/uploads/${editingNpc.image_url}`, npcForm.name)"
-                      >
-                        Download
-                      </v-btn>
-
-                      <!-- Delete Button (only if image exists) -->
-                      <v-btn
-                        v-if="editingNpc?.image_url"
-                        prepend-icon="mdi-delete"
-                        color="error"
-                        variant="outlined"
-                        block
-                        :loading="deletingImage"
-                        :disabled="uploadingImage || generatingImage"
-                        @click="deleteImage"
-                      >
-                        {{ $t('npcs.deleteImage') }}
-                      </v-btn>
-
-                      <!-- AI Hint -->
-                      <div v-if="!hasApiKey" class="text-caption text-medium-emphasis mt-3">
-                        <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                        KI-Generierung: OpenAI API-Key in Einstellungen hinterlegen
-                      </div>
-                      <div v-else-if="!npcForm.name" class="text-caption text-medium-emphasis mt-3">
-                        <v-icon size="small" class="mr-1">mdi-information-outline</v-icon>
-                        KI-Generierung: Bitte zuerst einen Namen eingeben
-                      </div>
-                    </div>
-                  </div>
-                </v-card-text>
-              </v-card>
-
-              <v-text-field
-                v-model="npcForm.name"
-                :label="$t('npcs.name')"
-                :rules="[(v: string) => !!v || $t('npcs.nameRequired')]"
-                variant="outlined"
-                class="mb-4"
-              >
-                <template #append-inner>
-                  <v-btn
-                    :loading="generatingName"
-                    icon="mdi-auto-fix"
-                    variant="text"
-                    size="small"
-                    color="primary"
-                    @click="generateName"
-                  />
-                </template>
-              </v-text-field>
-
-              <v-textarea
-                v-model="npcForm.description"
-                :label="$t('npcs.description')"
-                variant="outlined"
-                rows="4"
-                class="mb-4"
-              />
-
-              <!-- Race & Class -->
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-select
-                    :key="`race-${locale}`"
-                    v-model="npcForm.metadata.race"
-                    :items="raceItems"
-                    :label="$t('npcs.race')"
-                    variant="outlined"
-                    clearable
-                    item-title="title"
-                    item-value="value"
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    :key="`class-${locale}`"
-                    v-model="npcForm.metadata.class"
-                    :items="classItems"
-                    :label="$t('npcs.class')"
-                    variant="outlined"
-                    clearable
-                    item-title="title"
-                    item-value="value"
-                  />
-                </v-col>
-              </v-row>
-
-              <!-- Age & Gender -->
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-text-field
-                    v-model.number="npcForm.metadata.age"
-                    :label="$t('npcs.age')"
-                    variant="outlined"
-                    type="number"
-                    min="0"
-                    clearable
-                  />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="npcForm.metadata.gender"
-                    :label="$t('npcs.gender')"
-                    :items="genderItems"
-                    variant="outlined"
-                    clearable
-                  />
-                </v-col>
-              </v-row>
-
-              <!-- Type & Status -->
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="npcForm.metadata.type"
-                    :items="npcTypes"
-                    :label="$t('npcs.type')"
-                    variant="outlined"
-                    clearable
-                  >
-                    <template #item="{ props, item }">
-                      <v-list-item v-bind="props">
-                        <template #prepend>
-                          <v-icon :icon="getNpcTypeIcon(item.value)" />
-                        </template>
-                      </v-list-item>
-                    </template>
-                    <template #selection="{ item }">
-                      <v-chip>
-                        <template #prepend>
-                          <v-icon :icon="getNpcTypeIcon(item.value)" size="small" class="mr-1" />
-                        </template>
-                        {{ item.title }}
-                      </v-chip>
-                    </template>
-                  </v-select>
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-select
-                    v-model="npcForm.metadata.status"
-                    :items="npcStatuses"
-                    :label="$t('npcs.status')"
-                    variant="outlined"
-                    clearable
-                  >
-                    <template #item="{ props, item }">
-                      <v-list-item v-bind="props">
-                        <template #prepend>
-                          <v-icon
-                            :icon="getNpcStatusIcon(item.value)"
-                            :color="getNpcStatusColor(item.value)"
-                          />
-                        </template>
-                      </v-list-item>
-                    </template>
-                    <template #selection="{ item }">
-                      <v-chip :color="getNpcStatusColor(item.value)">
-                        <template #prepend>
-                          <v-icon :icon="getNpcStatusIcon(item.value)" size="small" class="mr-1" />
-                        </template>
-                        {{ item.title }}
-                      </v-chip>
-                    </template>
-                  </v-select>
-                </v-col>
-              </v-row>
-            </v-tabs-window-item>
-
-            <!-- NPC Relations Tab -->
-            <v-tabs-window-item value="npcRelations">
-              <v-list
-                v-if="
-                  editingNpc &&
-                  npcRelations.filter(
-                    (r: (typeof npcRelations)[0]) =>
-                      (r.related_npc_type || r.to_entity_type) === 'NPC',
-                  ).length > 0
-                "
-                class="mb-3"
-              >
-                <v-list-item
-                  v-for="relation in npcRelations.filter(
-                    (r: (typeof npcRelations)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
-                  )"
-                  :key="relation.id"
-                  class="mb-2"
-                  border
-                >
-                  <template #prepend>
-                    <v-icon icon="mdi-account" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ relation.related_npc_name || relation.to_entity_name }}
-                    <v-chip
-                      v-if="relation.direction === 'incoming'"
-                      size="x-small"
-                      color="info"
-                      class="ml-2"
-                    >
-                      ←
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1" color="primary" variant="tonal">
-                      {{ $t(`npcs.npcRelationTypes.${relation.relation_type}`, relation.relation_type) }}
-                    </v-chip>
-                    <span v-if="relation.notes" class="text-caption">
-                      {{ relation.notes }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <template v-if="relation.direction === 'outgoing'">
-                      <v-btn
-                        icon="mdi-pencil"
-                        variant="text"
-                        size="small"
-                        @click="editRelation(relation)"
-                      />
-                      <v-btn
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        @click="removeRelation(relation.id)"
-                      />
-                    </template>
-                    <v-tooltip v-else location="left">
-                      <template #activator="{ props }">
-                        <v-icon v-bind="props" color="info" size="small">
-                          mdi-information
-                        </v-icon>
-                      </template>
-                      {{ $t('npcs.incomingRelationTooltip') }}
-                    </v-tooltip>
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels v-if="editingNpc" class="mb-3">
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('npcs.addNpcRelation') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newNpcRelation.npcId"
-                      :items="npcsForSelect || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('npcs.selectNpc')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-combobox
-                      v-model="newNpcRelation.relationType"
-                      :items="npcRelationTypeSuggestions"
-                      :label="$t('npcs.npcRelationType')"
-                      :placeholder="$t('npcs.npcRelationTypePlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-textarea
-                      v-model="newNpcRelation.notes"
-                      :label="$t('npcs.relationNotes')"
-                      :placeholder="$t('npcs.relationNotesPlaceholder')"
-                      variant="outlined"
-                      rows="2"
-                      class="mb-3"
-                    />
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newNpcRelation.npcId || !newNpcRelation.relationType"
-                      :loading="addingNpcRelation"
-                      @click="addNpcRelation"
-                    >
-                      {{ $t('npcs.addNpcRelation') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Locations Tab -->
-            <v-tabs-window-item value="locations">
-              <v-list
-                v-if="
-                  editingNpc &&
-                  npcRelations.filter(
-                    (r: (typeof npcRelations)[0]) => r.to_entity_type === 'Location',
-                  ).length > 0
-                "
-                class="mb-3"
-              >
-                <v-list-item
-                  v-for="relation in npcRelations.filter(
-                    (r: (typeof npcRelations)[0]) => r.to_entity_type === 'Location',
-                  )"
-                  :key="relation.id"
-                  class="mb-2"
-                  border
-                >
-                  <template #prepend>
-                    <v-icon icon="mdi-map-marker" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ relation.to_entity_name }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1">
-                      {{ relation.relation_type }}
-                    </v-chip>
-                    <span v-if="relation.notes" class="text-caption">
-                      {{ relation.notes }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      icon="mdi-pencil"
-                      variant="text"
-                      size="small"
-                      @click="editRelation(relation)"
-                    />
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeRelation(relation.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels v-if="editingNpc" class="mb-3">
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('npcs.addLocationLink') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newRelation.locationId"
-                      :items="locations || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('npcs.selectLocation')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-combobox
-                      v-model="newRelation.relationType"
-                      :items="relationTypeSuggestions"
-                      :label="$t('npcs.relationType')"
-                      :placeholder="$t('npcs.relationTypePlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-textarea
-                      v-model="newRelation.notes"
-                      :label="$t('npcs.relationNotes')"
-                      :placeholder="$t('npcs.relationNotesPlaceholder')"
-                      variant="outlined"
-                      rows="2"
-                      class="mb-3"
-                    />
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newRelation.locationId || !newRelation.relationType"
-                      :loading="addingRelation"
-                      @click="addLocationRelation"
-                    >
-                      {{ $t('npcs.addLocationLink') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Memberships Tab -->
-            <v-tabs-window-item value="memberships">
-              <div class="text-h6 mb-4">
-                {{ $t('npcs.factionMemberships') }}
-              </div>
-
-              <v-list v-if="factionMemberships.length > 0" class="mb-3">
-                <v-list-item
-                  v-for="membership in factionMemberships"
-                  :key="membership.id"
-                  class="mb-2"
-                  border
-                >
-                  <template #prepend>
-                    <v-icon icon="mdi-shield-account" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ membership.to_entity_name }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1">
-                      {{ membership.relation_type }}
-                    </v-chip>
-                    <span v-if="membership.notes?.rank" class="text-caption">
-                      {{ $t('npcs.rank') }}: {{ membership.notes.rank }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      icon="mdi-pencil"
-                      variant="text"
-                      size="small"
-                      @click="editMembership(membership)"
-                    />
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeMembership(membership.id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels class="mb-4">
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('npcs.addFactionMembership') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newMembership.factionId"
-                      :items="factions || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('npcs.selectFaction')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-combobox
-                      v-model="newMembership.relationType"
-                      :items="membershipTypeSuggestions"
-                      :label="$t('npcs.membershipType')"
-                      :placeholder="$t('npcs.membershipTypePlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-text-field
-                      v-model="newMembership.rank"
-                      :label="$t('npcs.rank')"
-                      :placeholder="$t('npcs.rankPlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newMembership.factionId || !newMembership.relationType"
-                      :loading="addingMembership"
-                      @click="addFactionMembership"
-                    >
-                      {{ $t('npcs.addFactionMembership') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Items Tab -->
-            <v-tabs-window-item value="items">
-              <div class="text-h6 mb-4">
-                {{ $t('npcs.itemsList') }}
-              </div>
-
-              <v-list v-if="npcItems.length > 0" class="mb-3">
-                <v-list-item v-for="item in npcItems" :key="item.id" class="mb-2" border>
-                  <template #prepend>
-                    <v-icon icon="mdi-sword" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    {{ item.name }}
-                    <v-chip v-if="item.equipped" size="x-small" color="success" class="ml-2">
-                      {{ $t('npcs.equipped') }}
-                    </v-chip>
-                    <v-chip v-if="item.rarity" size="x-small" :color="getRarityColor(item.rarity)" class="ml-2">
-                      {{ $t(`items.rarities.${item.rarity}`) }}
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    <v-chip size="small" class="mr-1" color="primary" variant="tonal">
-                      {{ $t(`npcs.itemRelationTypes.${item.relation_type}`, item.relation_type) }}
-                    </v-chip>
-                    <span v-if="item.quantity && item.quantity > 1" class="text-caption mr-2">
-                      {{ item.quantity }}x
-                    </span>
-                    <span v-if="item.description" class="text-caption text-medium-emphasis">
-                      {{ item.description }}
-                    </span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="removeItem(item.relation_id)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-expansion-panels>
-                <v-expansion-panel>
-                  <v-expansion-panel-title>
-                    <v-icon start> mdi-plus </v-icon>
-                    {{ $t('npcs.addItem') }}
-                  </v-expansion-panel-title>
-                  <v-expansion-panel-text>
-                    <v-select
-                      v-model="newItem.itemId"
-                      :items="items || []"
-                      item-title="name"
-                      item-value="id"
-                      :label="$t('npcs.selectItem')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-combobox
-                      v-model="newItem.relationType"
-                      :items="itemRelationTypeSuggestions"
-                      :label="$t('npcs.itemRelationType')"
-                      :placeholder="$t('npcs.itemRelationTypePlaceholder')"
-                      variant="outlined"
-                      class="mb-3"
-                    />
-
-                    <v-row>
-                      <v-col cols="12" md="6">
-                        <v-text-field
-                          v-model.number="newItem.quantity"
-                          :label="$t('npcs.quantity')"
-                          :placeholder="$t('npcs.quantityPlaceholder')"
-                          variant="outlined"
-                          type="number"
-                          min="1"
-                        />
-                      </v-col>
-                      <v-col cols="12" md="6" class="d-flex align-center">
-                        <v-switch
-                          v-model="newItem.equipped"
-                          :label="$t('npcs.equipped')"
-                          color="primary"
-                          hide-details
-                        />
-                      </v-col>
-                    </v-row>
-
-                    <v-btn
-                      color="primary"
-                      prepend-icon="mdi-link"
-                      :disabled="!newItem.itemId || !newItem.relationType"
-                      :loading="addingItem"
-                      @click="addItemToNpc"
-                    >
-                      {{ $t('npcs.addItem') }}
-                    </v-btn>
-                  </v-expansion-panel-text>
-                </v-expansion-panel>
-              </v-expansion-panels>
-            </v-tabs-window-item>
-
-            <!-- Notes Tab -->
-            <v-tabs-window-item value="notes">
-              <div class="d-flex justify-space-between align-center mb-4">
-                <v-text-field
-                  v-model="notesSearch"
-                  :placeholder="$t('npcs.searchNotes')"
-                  prepend-inner-icon="mdi-magnify"
-                  variant="outlined"
-                  density="compact"
-                  clearable
-                  hide-details
-                  class="mr-2"
-                />
-                <v-btn color="primary" prepend-icon="mdi-plus" @click="showNoteDialog = true">
-                  {{ $t('npcs.newNote') }}
-                </v-btn>
-              </div>
-
-              <v-progress-linear v-if="loadingNotes" indeterminate />
-
-              <v-list v-else-if="filteredNotes.length > 0">
-                <v-list-item v-for="note in filteredNotes" :key="note.id" class="mb-2" border>
-                  <template #prepend>
-                    <v-icon icon="mdi-note-text" color="primary" />
-                  </template>
-                  <v-list-item-title>
-                    <span class="text-caption text-medium-emphasis mr-2">
-                      {{ formatDate(note.date || note.created_at) }}
-                    </span>
-                    <span v-if="note.title" class="font-weight-medium">
-                      {{ note.title }}
-                    </span>
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="mt-1">
-                    {{ truncateText(note.summary, 150) }}
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn icon="mdi-pencil" variant="text" size="small" @click="editNote(note)" />
-                    <v-btn
-                      icon="mdi-delete"
-                      variant="text"
-                      size="small"
-                      color="error"
-                      @click="deleteNote(note)"
-                    />
-                  </template>
-                </v-list-item>
-              </v-list>
-
-              <v-empty-state
-                v-else
-                icon="mdi-note-text-outline"
-                :title="$t('npcs.noNotes')"
-                :text="$t('npcs.noNotesText')"
-              />
-            </v-tabs-window-item>
-
-            <!-- Documents Tab -->
-            <v-tabs-window-item value="documents">
-              <EntityDocuments
-                v-if="editingNpc"
-                :entity-id="editingNpc.id"
-                @changed="handleDocumentsChanged"
-              />
-            </v-tabs-window-item>
-
-            <!-- Lore Tab -->
-            <v-tabs-window-item value="lore">
-              <div v-if="editingNpc">
-                <!-- Add Lore Relation -->
-                <v-card variant="outlined" class="mb-4">
-                  <v-card-text>
-                    <v-autocomplete
-                      v-model="selectedLoreId"
-                      :items="loreItems"
-                      :label="$t('lore.selectLore')"
-                      :placeholder="$t('lore.selectLorePlaceholder')"
-                      variant="outlined"
-                      clearable
-                      :loading="loadingLore"
-                      class="mb-2"
-                    />
-                    <v-btn color="primary" :disabled="!selectedLoreId" @click="addLoreRelation">
-                      <v-icon start> mdi-link-plus </v-icon>
-                      {{ $t('lore.addRelation') }}
-                    </v-btn>
-                  </v-card-text>
-                </v-card>
-
-                <!-- Linked Lore List -->
-                <v-list v-if="linkedLore.length > 0">
-                  <v-list-item v-for="lore in linkedLore" :key="lore.id" class="mb-2">
-                    <template #prepend>
-                      <v-avatar v-if="lore.image_url" size="56" rounded="lg" class="mr-3">
-                        <v-img :src="`/uploads/${lore.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else size="56" rounded="lg" class="mr-3" color="surface-variant">
-                        <v-icon icon="mdi-book-open-variant" />
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title>{{ lore.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="lore.description">
-                      {{ lore.description.substring(0, 100)
-                      }}{{ lore.description.length > 100 ? '...' : '' }}
-                    </v-list-item-subtitle>
-                    <template #append>
-                      <v-btn
-                        icon="mdi-delete"
-                        variant="text"
-                        color="error"
-                        size="small"
-                        @click="removeLoreRelation(lore.id)"
-                      />
-                    </template>
-                  </v-list-item>
-                </v-list>
-
-                <v-empty-state
-                  v-else
-                  icon="mdi-book-open-variant"
-                  :title="$t('lore.noLinkedLore')"
-                  :text="$t('lore.noLinkedLoreText')"
-                />
-              </div>
-            </v-tabs-window-item>
-          </v-tabs-window>
-
-          <!-- Create Form (no tabs) -->
-          <div v-if="!editingNpc">
-            <v-text-field
-              v-model="npcForm.name"
-              :label="$t('npcs.name')"
-              :rules="[(v: string) => !!v || $t('npcs.nameRequired')]"
-              variant="outlined"
-              class="mb-4"
-            >
-              <template #append-inner>
-                <v-btn
-                  :loading="generatingName"
-                  icon="mdi-auto-fix"
-                  variant="text"
-                  size="small"
-                  color="primary"
-                  @click="generateName"
-                />
-              </template>
-            </v-text-field>
-
-            <v-textarea
-              v-model="npcForm.description"
-              :label="$t('npcs.description')"
-              variant="outlined"
-              rows="4"
-              class="mb-4"
-            />
-
-            <!-- Race & Class -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  :key="`race-${locale}`"
-                  v-model="npcForm.metadata.race"
-                  :items="raceItems"
-                  :label="$t('npcs.race')"
-                  variant="outlined"
-                  clearable
-                  item-title="title"
-                  item-value="value"
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  :key="`class-${locale}`"
-                  v-model="npcForm.metadata.class"
-                  :items="classItems"
-                  :label="$t('npcs.class')"
-                  variant="outlined"
-                  clearable
-                  item-title="title"
-                  item-value="value"
-                />
-              </v-col>
-            </v-row>
-
-            <!-- Age & Gender -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  v-model.number="npcForm.metadata.age"
-                  :label="$t('npcs.age')"
-                  variant="outlined"
-                  type="number"
-                  min="0"
-                  clearable
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="npcForm.metadata.gender"
-                  :label="$t('npcs.gender')"
-                  :items="genderItems"
-                  variant="outlined"
-                  clearable
-                />
-              </v-col>
-            </v-row>
-
-            <!-- Type & Status -->
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="npcForm.metadata.type"
-                  :items="npcTypes"
-                  :label="$t('npcs.type')"
-                  variant="outlined"
-                  clearable
-                >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props">
-                      <template #prepend>
-                        <v-icon :icon="getNpcTypeIcon(item.value)" />
-                      </template>
-                    </v-list-item>
-                  </template>
-                  <template #selection="{ item }">
-                    <v-chip>
-                      <template #prepend>
-                        <v-icon :icon="getNpcTypeIcon(item.value)" size="small" class="mr-1" />
-                      </template>
-                      {{ item.title }}
-                    </v-chip>
-                  </template>
-                </v-select>
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-select
-                  v-model="npcForm.metadata.status"
-                  :items="npcStatuses"
-                  :label="$t('npcs.status')"
-                  variant="outlined"
-                  clearable
-                >
-                  <template #item="{ props, item }">
-                    <v-list-item v-bind="props">
-                      <template #prepend>
-                        <v-icon
-                          :icon="getNpcStatusIcon(item.value)"
-                          :color="getNpcStatusColor(item.value)"
-                        />
-                      </template>
-                    </v-list-item>
-                  </template>
-                  <template #selection="{ item }">
-                    <v-chip :color="getNpcStatusColor(item.value)">
-                      <template #prepend>
-                        <v-icon :icon="getNpcStatusIcon(item.value)" size="small" class="mr-1" />
-                      </template>
-                      {{ item.title }}
-                    </v-chip>
-                  </template>
-                </v-select>
-              </v-col>
-            </v-row>
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            variant="text"
-            :disabled="saving || uploadingImage || deletingImage || generatingImage"
-            @click="closeDialog"
-          >
-            {{ $t('common.cancel') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            :disabled="!npcForm.name || uploadingImage || deletingImage || generatingImage"
-            :loading="saving"
-            @click="saveNpc"
-          >
-            {{ editingNpc ? $t('common.save') : $t('common.create') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <NpcEditDialog
+      v-model:show="showCreateDialog"
+      v-model:form="npcForm"
+      v-model:active-tab="npcDialogTab"
+      v-model:notes-search="notesSearch"
+      :editing-npc="editingNpc"
+      :race-items="raceItems"
+      :class-items="classItems"
+      :gender-items="genderItems"
+      :npc-types="npcTypes"
+      :npc-statuses="npcStatuses"
+      :npc-relations="npcRelations"
+      :faction-memberships="factionMemberships"
+      :npc-items="npcItems"
+      :npc-notes="npcNotes"
+      :linked-lore="linkedLore"
+      :available-npcs="npcsForSelect || []"
+      :available-locations="locations || []"
+      :available-factions="factions || []"
+      :available-items="items || []"
+      :lore-items="loreItems"
+      :saving="saving"
+      :uploading-image="uploadingImage"
+      :deleting-image="deletingImage"
+      :generating-image="generatingImage"
+      :generating-name="generatingName"
+      :adding-npc-relation="addingNpcRelation"
+      :adding-location-relation="addingRelation"
+      :adding-membership="addingMembership"
+      :adding-item="addingItem"
+      :loading-notes="loadingNotes"
+      :loading-lore="loadingLore"
+      :has-api-key="hasApiKey"
+      :filtered-notes="filteredNotes"
+      :npc-relation-count="npcRelationCount"
+      :location-relation-count="locationRelationCount"
+      @save="saveNpc"
+      @close="closeDialog"
+      @trigger-image-upload="triggerImageUpload"
+      @generate-image="generateImage"
+      @delete-image="deleteImage"
+      @download-image="(url, name) => downloadImage(url, name)"
+      @open-image-preview="(url, name) => openImagePreview(url, name)"
+      @generate-name="generateName"
+      @add-npc-relation="addNpcRelation"
+      @add-location-relation="addLocationRelation"
+      @add-membership="addFactionMembership"
+      @add-item="addItemToNpc"
+      @edit-relation="editRelation"
+      @remove-relation="removeRelation"
+      @edit-membership="editMembership"
+      @remove-membership="removeMembership"
+      @remove-item="removeItem"
+      @new-note="showNoteDialog = true"
+      @edit-note="editNote"
+      @delete-note="deleteNote"
+      @documents-changed="handleDocumentsChanged"
+      @add-lore="addLoreRelation"
+      @remove-lore="removeLoreRelation"
+    />
 
     <!-- Note Create/Edit Dialog -->
     <v-dialog v-model="showNoteDialog" max-width="700">
@@ -1306,10 +349,10 @@
 <script setup lang="ts">
 import type { NPC, NpcType, NpcStatus } from '../../../types/npc'
 import { NPC_TYPES, NPC_STATUSES } from '../../../types/npc'
-import NpcCard from '~/components/npcs/NpcCard.vue'
-import NpcViewDialog from '~/components/npcs/NpcViewDialog.vue'
-import EntityDocuments from '~/components/shared/EntityDocuments.vue'
-import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
+import NpcCard from '../../components/npcs/NpcCard.vue'
+import NpcViewDialog from '../../components/npcs/NpcViewDialog.vue'
+import NpcEditDialog from '../../components/npcs/NpcEditDialog.vue'
+import ImagePreviewDialog from '../../components/shared/ImagePreviewDialog.vue'
 
 const { t, locale } = useI18n()
 const router = useRouter()
@@ -1618,7 +661,6 @@ const npcDialogTab = ref('details')
 const linkedLore = ref<
   Array<{ id: number; name: string; description: string | null; image_url: string | null }>
 >([])
-const selectedLoreId = ref<number | null>(null)
 const loadingLore = ref(false)
 
 const npcForm = ref({
@@ -1652,12 +694,6 @@ onMounted(async () => {
 })
 
 // Computed for generate button disabled state
-const generateButtonDisabled = computed(() => {
-  const isDisabled =
-    uploadingImage.value || deletingImage.value || !npcForm.value.name || !hasApiKey.value
-  return isDisabled
-})
-
 // Image upload state
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const uploadingImage = ref(false)
@@ -1667,49 +703,6 @@ const generatingImage = ref(false)
 // Trigger native file input
 function triggerImageUpload() {
   fileInputRef.value?.click()
-}
-
-// Handle image upload
-async function handleImageUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (!target.files || !target.files.length || !editingNpc.value) return
-
-  const file = target.files[0]
-  if (!file) return
-
-  uploadingImage.value = true
-
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await $fetch<{ success: boolean; imageUrl: string }>(
-      `/api/entities/${editingNpc.value.id}/upload-image`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-    )
-
-    if (response.success) {
-      // Update the editing NPC with new image URL
-      editingNpc.value.image_url = response.imageUrl
-
-      // Update store reactively (no fetch needed!)
-      const npcInStore = entitiesStore.npcs.find((n) => n.id === editingNpc.value!.id)
-      if (npcInStore) {
-        npcInStore.image_url = response.imageUrl
-      }
-
-      // Reset input
-      target.value = ''
-    }
-  } catch (error) {
-    console.error('Failed to upload image:', error)
-    alert(t('npcs.uploadImageError'))
-  } finally {
-    uploadingImage.value = false
-  }
 }
 
 // Delete image function
@@ -1865,6 +858,20 @@ const npcStatuses = computed(() =>
   })),
 )
 
+// Relation counts for dialog tabs
+const npcRelationCount = computed(() => {
+  return npcRelations.value.filter(
+    (r: (typeof npcRelations.value)[0]) => (r.related_npc_type || r.to_entity_type) === 'NPC',
+  ).length
+})
+
+const locationRelationCount = computed(() => {
+  return npcRelations.value.filter(
+    (r: (typeof npcRelations.value)[0]) =>
+      (r.related_npc_type || r.to_entity_type) === 'Location',
+  ).length
+})
+
 // Get icon for NPC type
 // NPC Relations state
 const npcRelations = ref<
@@ -1920,17 +927,6 @@ const relationTypeSuggestions = computed(() => [
   t('npcs.relationTypes.owns'),
   t('npcs.relationTypes.searchesFor'),
   t('npcs.relationTypes.banishedFrom'),
-])
-
-const npcRelationTypeSuggestions = computed(() => [
-  t('npcs.npcRelationTypes.ally'),
-  t('npcs.npcRelationTypes.enemy'),
-  t('npcs.npcRelationTypes.family'),
-  t('npcs.npcRelationTypes.friend'),
-  t('npcs.npcRelationTypes.rival'),
-  t('npcs.npcRelationTypes.mentor'),
-  t('npcs.npcRelationTypes.student'),
-  t('npcs.npcRelationTypes.colleague'),
 ])
 
 const npcsForSelect = computed(() => {
@@ -2010,17 +1006,6 @@ const newItem = ref({
 const addingItem = ref(false)
 
 // Suggested item relation types (i18n)
-const itemRelationTypeSuggestions = computed(() => [
-  t('npcs.itemRelationTypes.owns'),
-  t('npcs.itemRelationTypes.carries'),
-  t('npcs.itemRelationTypes.wields'),
-  t('npcs.itemRelationTypes.wears'),
-  t('npcs.itemRelationTypes.seeks'),
-  t('npcs.itemRelationTypes.guards'),
-  t('npcs.itemRelationTypes.stole'),
-  t('npcs.itemRelationTypes.lost'),
-])
-
 // Notes state
 const npcNotes = ref<
   Array<{
@@ -2061,22 +1046,6 @@ const filteredNotes = computed(() => {
       note.notes?.toLowerCase().includes(query),
   )
 })
-
-function truncateText(text: string, length: number) {
-  if (text.length <= length) return text
-  return `${text.substring(0, length)}...`
-}
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('de-DE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
 
 async function loadNotes() {
   if (!editingNpc.value) return
@@ -2838,21 +1807,23 @@ async function loadLinkedLore(npcId: number) {
 }
 
 // Add lore relation
-async function addLoreRelation() {
-  if (!editingNpc.value || !selectedLoreId.value) return
+async function addLoreRelation(loreId: number) {
+  if (!editingNpc.value || !loreId) return
 
   try {
     await $fetch('/api/entity-relations', {
       method: 'POST',
       body: {
         fromEntityId: editingNpc.value.id,
-        toEntityId: selectedLoreId.value,
+        toEntityId: loreId,
         relationType: 'kennt',
       },
     })
 
     await loadLinkedLore(editingNpc.value.id)
-    selectedLoreId.value = null
+
+    // Reload counts for this NPC (lore count changed)
+    await reloadNpcCounts(editingNpc.value)
   } catch (error) {
     console.error('Failed to add lore relation:', error)
   }
@@ -2877,6 +1848,9 @@ async function removeLoreRelation(loreId: number) {
       })
 
       await loadLinkedLore(editingNpc.value.id)
+
+      // Reload counts for this NPC (lore count changed)
+      await reloadNpcCounts(editingNpc.value)
     }
   } catch (error) {
     console.error('Failed to remove lore relation:', error)
@@ -2890,60 +1864,6 @@ async function handleDocumentsChanged() {
   }
 }
 
-// Icon helper functions for NPC types and statuses
-function getNpcTypeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    ally: 'mdi-handshake',
-    enemy: 'mdi-sword-cross',
-    neutral: 'mdi-minus-circle',
-    questgiver: 'mdi-exclamation',
-    merchant: 'mdi-cart',
-    guard: 'mdi-shield',
-    noble: 'mdi-crown',
-    commoner: 'mdi-account',
-    villain: 'mdi-skull',
-    mentor: 'mdi-school',
-    companion: 'mdi-account-multiple',
-    informant: 'mdi-eye',
-  }
-  return icons[type] || 'mdi-account'
-}
-
-function getNpcStatusIcon(status: string): string {
-  const icons: Record<string, string> = {
-    alive: 'mdi-heart-pulse',
-    dead: 'mdi-skull',
-    missing: 'mdi-help-circle',
-    imprisoned: 'mdi-lock',
-    unknown: 'mdi-help',
-    undead: 'mdi-zombie',
-  }
-  return icons[status] || 'mdi-help'
-}
-
-function getNpcStatusColor(status: string): string {
-  const colors: Record<string, string> = {
-    alive: 'success',
-    dead: 'error',
-    missing: 'warning',
-    imprisoned: 'grey-darken-2',
-    unknown: 'grey',
-    undead: 'purple',
-  }
-  return colors[status] || 'grey'
-}
-
-function getRarityColor(rarity: string): string {
-  const colors: Record<string, string> = {
-    common: 'grey',
-    uncommon: 'success',
-    rare: 'info',
-    'very rare': 'warning',
-    legendary: 'error',
-    artifact: 'purple',
-  }
-  return colors[rarity] || 'grey'
-}
 </script>
 
 <style scoped>
@@ -2992,6 +1912,7 @@ function getRarityColor(rarity: string): string {
 /* NPC Description - Fixed 3 lines */
 .npc-description {
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
