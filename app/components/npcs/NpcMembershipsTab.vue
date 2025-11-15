@@ -64,9 +64,11 @@
       class="mb-3"
     />
 
-    <v-combobox
+    <v-select
       v-model="localRelationType"
       :items="membershipTypeSuggestions"
+      item-title="title"
+      item-value="value"
       :label="$t('npcs.membershipType')"
       :placeholder="$t('npcs.membershipTypePlaceholder')"
       variant="outlined"
@@ -95,6 +97,8 @@
 </template>
 
 <script setup lang="ts">
+const { t } = useI18n()
+
 interface Membership {
   id: number
   from_entity_id: number
@@ -130,14 +134,15 @@ const localFactionId = ref<number | null>(null)
 const localRelationType = ref('')
 const localRank = ref('')
 
-const membershipTypeSuggestions = [
-  'Mitglied',
-  'Anführer',
-  'Stellvertreter',
-  'Berater',
-  'Rekrut',
-  'Veteran',
-]
+const membershipTypeSuggestions = computed(() => [
+  { title: t('npcs.membershipTypes.member'), value: 'member' },
+  { title: t('npcs.membershipTypes.leader'), value: 'leader' },
+  { title: t('npcs.membershipTypes.founder'), value: 'founder' },
+  { title: t('npcs.membershipTypes.officer'), value: 'officer' },
+  { title: t('npcs.membershipTypes.recruit'), value: 'recruit' },
+  { title: t('npcs.membershipTypes.veteran'), value: 'veteran' },
+  { title: t('npcs.membershipTypes.exile'), value: 'exile' },
+])
 
 function handleAdd() {
   if (!localFactionId.value || !localRelationType.value) return

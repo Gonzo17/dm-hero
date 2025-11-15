@@ -414,9 +414,11 @@
                       class="mb-3"
                     />
 
-                    <v-combobox
+                    <v-select
                       v-model="newOwner.relationType"
                       :items="ownerRelationTypeSuggestions"
+                      item-title="title"
+                      item-value="value"
                       :label="$t('items.ownerRelationType')"
                       :placeholder="$t('items.ownerRelationTypePlaceholder')"
                       variant="outlined"
@@ -1129,14 +1131,14 @@ const addingOwner = ref(false)
 
 // Suggested owner relation types (i18n)
 const ownerRelationTypeSuggestions = computed(() => [
-  'owns',
-  'carries',
-  'wields',
-  'wears',
-  'seeks',
-  'guards',
-  'stole',
-  'lost',
+  { title: t('items.ownerRelationTypes.owns'), value: 'owns' },
+  { title: t('items.ownerRelationTypes.carries'), value: 'carries' },
+  { title: t('items.ownerRelationTypes.wields'), value: 'wields' },
+  { title: t('items.ownerRelationTypes.wears'), value: 'wears' },
+  { title: t('items.ownerRelationTypes.seeks'), value: 'seeks' },
+  { title: t('items.ownerRelationTypes.guards'), value: 'guards' },
+  { title: t('items.ownerRelationTypes.stole'), value: 'stole' },
+  { title: t('items.ownerRelationTypes.lost'), value: 'lost' },
 ])
 
 // Locations state
@@ -1346,6 +1348,11 @@ async function addOwnerToItem() {
 
     await loadItemOwners()
 
+    // Reload counts to update the badge on the card
+    if (editingItem.value) {
+      await reloadItemCounts(editingItem.value)
+    }
+
     // Reset form
     newOwner.value = {
       npcId: null,
@@ -1366,6 +1373,11 @@ async function removeOwner(relationId: number) {
       method: 'DELETE',
     })
     await loadItemOwners()
+
+    // Reload counts to update the badge on the card
+    if (editingItem.value) {
+      await reloadItemCounts(editingItem.value)
+    }
   } catch (error) {
     console.error('Failed to remove owner:', error)
   }

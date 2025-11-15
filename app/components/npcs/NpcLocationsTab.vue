@@ -65,7 +65,7 @@
             class="mb-3"
           />
 
-          <v-combobox
+          <v-select
             v-model="localRelationType"
             :items="relationTypeSuggestions"
             :label="$t('npcs.relationType')"
