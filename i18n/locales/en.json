@@ -100,6 +100,8 @@
     "age": "Age",
     "gender": "Gender",
     "linkedLocations": "Linked Locations",
+    "noLinkedLocations": "No Linked Locations",
+    "noLinkedLocationsText": "This NPC is not linked to any locations yet.",
     "selectLocation": "Select Location",
     "relationType": "Relation Type",
     "relationTypePlaceholder": "e.g. lives in, works at",

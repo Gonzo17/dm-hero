@@ -99,6 +99,8 @@
     "age": "Alter",
     "gender": "Geschlecht",
     "linkedLocations": "Verknüpfte Orte",
+    "noLinkedLocations": "Keine verknüpften Orte",
+    "noLinkedLocationsText": "Dieser NPC ist noch mit keinen Orten verknüpft.",
     "selectLocation": "Ort auswählen",
     "relationType": "Beziehungstyp",
     "relationTypePlaceholder": "z.B. lebt in, arbeitet bei",
