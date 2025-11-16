@@ -210,27 +210,11 @@
 
           <!-- Documents Tab -->
           <v-window-item value="documents">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="documents.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('documents.empty') }}
-              </div>
-              <div v-else>
-                <v-expansion-panels variant="accordion">
-                  <v-expansion-panel v-for="doc in documents" :key="doc.id">
-                    <v-expansion-panel-title>
-                      <v-icon start>mdi-file-document</v-icon>
-                      {{ doc.title }}
-                    </v-expansion-panel-title>
-                    <v-expansion-panel-text>
-                      <MdPreview :model-value="doc.content || ''" language="en-US" />
-                    </v-expansion-panel-text>
-                  </v-expansion-panel>
-                </v-expansion-panels>
-              </div>
-            </div>
+            <EntityDocumentsView
+              :documents="documents"
+              :loading="loading"
+              :empty-message="$t('documents.empty')"
+            />
           </v-window-item>
 
           <!-- Lore Tab -->
@@ -247,25 +231,12 @@
 
           <!-- Gallery Tab -->
           <v-window-item value="gallery">
-            <div class="pa-4">
-              <div v-if="loading" class="text-center py-8">
-                <v-progress-circular indeterminate color="primary" />
-              </div>
-              <div v-else-if="images.length === 0" class="text-center py-8 text-medium-emphasis">
-                {{ $t('common.noImages') }}
-              </div>
-              <v-row v-else dense>
-                <v-col v-for="image in images" :key="image.id" cols="6" sm="4" md="3">
-                  <v-card @click="openImagePreview(image)">
-                    <v-img :src="`/uploads/${image.image_url}`" aspect-ratio="1" cover>
-                      <v-chip v-if="image.is_primary" size="x-small" color="primary" class="ma-2">
-                        {{ $t('common.primary') }}
-                      </v-chip>
-                    </v-img>
-                  </v-card>
-                </v-col>
-              </v-row>
-            </div>
+            <EntityImageGalleryView
+              :images="images"
+              :loading="loading"
+              :empty-message="$t('common.noImages')"
+              @preview="openImagePreview"
+            />
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -295,10 +266,10 @@
 </template>
 
 <script setup lang="ts">
-import { MdPreview } from 'md-editor-v3'
-import 'md-editor-v3/lib/preview.css'
 import type { NPC } from '~~/types/npc'
 import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
+import EntityDocumentsView from '~/components/shared/EntityDocumentsView.vue'
+import EntityImageGalleryView from '~/components/shared/EntityImageGalleryView.vue'
 
 interface Props {
   show: boolean

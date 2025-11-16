@@ -510,6 +510,7 @@
     "quantity": "Quantity",
     "quantityPlaceholder": "e.g. 1, 5, 10",
     "noItems": "No items at this location",
+    "noLore": "No linked lore",
     "itemRelationTypes": {
       "contains": "contains",
       "hidden": "hidden",
@@ -619,6 +620,14 @@
       "very_rare": "Very Rare",
       "legendary": "Legendary",
       "artifact": "Artifact"
+    },
+    "relationTypes": {
+      "contains": "contains",
+      "hidden": "hidden",
+      "displayed": "displayed",
+      "stored": "stored",
+      "lost": "lost",
+      "guarded": "guarded"
     },
     "details": "Details",
     "owners": "Owners",
