@@ -108,7 +108,6 @@
     "addLocationLink": "Link Location",
     "editRelation": "Edit Relation",
     "editMembership": "Edit Membership",
-    "faction": "Faction",
     "membershipType": "Membership Type",
     "relationTypes": {
       "livesIn": "lives in",
@@ -291,7 +290,6 @@
     "noMembers": "No Members",
     "noMembersText": "This faction has no members yet.",
     "noItems": "No Items",
-    "noLocations": "No Locations",
     "noLore": "No Lore",
     "addMember": "Add Member",
     "selectNpc": "Select NPC",
@@ -512,7 +510,6 @@
     "quantity": "Quantity",
     "quantityPlaceholder": "e.g. 1, 5, 10",
     "noItems": "No items at this location",
-    "noLore": "No linked lore",
     "itemRelationTypes": {
       "contains": "contains",
       "hidden": "hidden",

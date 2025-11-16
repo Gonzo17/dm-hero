@@ -509,7 +509,6 @@
     "quantity": "Anzahl",
     "quantityPlaceholder": "z.B. 1, 5, 10",
     "noItems": "Keine Items an diesem Ort",
-    "noLore": "Kein verknüpftes Wissen",
     "itemRelationTypes": {
       "contains": "enthält",
       "hidden": "versteckt",

@@ -1,15 +1,18 @@
 <template>
   <v-dialog :model-value="modelValue" max-width="900" scrollable @update:model-value="$emit('update:modelValue', $event)">
-    <v-card v-if="location">
+    <v-card v-if="lore">
+      <!-- Header with Avatar & Name -->
       <v-card-title class="d-flex align-center pa-4">
         <v-avatar :size="64" class="mr-4">
-          <v-img v-if="location.image_url" :src="`/uploads/${location.image_url}`" cover />
-          <v-icon v-else icon="mdi-map-marker" size="32" />
+          <v-img v-if="lore.image_url" :src="`/uploads/${lore.image_url}`" cover />
+          <v-icon v-else icon="mdi-book-open-variant" size="32" />
         </v-avatar>
         <div class="flex-grow-1">
-          <h2 class="text-h5">{{ location.name }}</h2>
-          <div v-if="location.metadata?.type" class="text-body-2 text-medium-emphasis">
-            {{ location.metadata.type }}
+          <div class="text-h5">{{ lore.name }}</div>
+          <div v-if="lore.metadata?.type" class="mt-1">
+            <v-chip :color="getTypeColor(lore.metadata.type)" size="small">
+              {{ $t(`lore.types.${lore.metadata.type}`) }}
+            </v-chip>
           </div>
         </div>
         <v-btn icon="mdi-close" variant="text" @click="$emit('update:modelValue', false)">
@@ -28,27 +31,32 @@
         <v-tab value="npcs">
           <v-icon start>mdi-account-group</v-icon>
           {{ $t('npcs.title') }}
-          <v-chip size="x-small" class="ml-2">{{ counts?.npcs || 0 }}</v-chip>
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.npcs }}</v-chip>
         </v-tab>
         <v-tab value="items">
           <v-icon start>mdi-treasure-chest</v-icon>
           {{ $t('items.title') }}
-          <v-chip size="x-small" class="ml-2">{{ items.length }}</v-chip>
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.items }}</v-chip>
         </v-tab>
-        <v-tab value="lore">
-          <v-icon start>mdi-book-open-variant</v-icon>
-          {{ $t('lore.title') }}
-          <v-chip size="x-small" class="ml-2">{{ counts?.lore || 0 }}</v-chip>
+        <v-tab value="factions">
+          <v-icon start>mdi-shield-account</v-icon>
+          {{ $t('factions.title') }}
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.factions }}</v-chip>
+        </v-tab>
+        <v-tab value="locations">
+          <v-icon start>mdi-map-marker</v-icon>
+          {{ $t('locations.title') }}
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.locations }}</v-chip>
         </v-tab>
         <v-tab value="documents">
           <v-icon start>mdi-file-document</v-icon>
           {{ $t('documents.title') }}
-          <v-chip size="x-small" class="ml-2">{{ counts?.documents || 0 }}</v-chip>
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.documents }}</v-chip>
         </v-tab>
         <v-tab value="gallery">
           <v-icon start>mdi-image</v-icon>
           {{ $t('common.images') }}
-          <v-chip size="x-small" class="ml-2">{{ counts?.images || 0 }}</v-chip>
+          <v-chip v-if="counts" size="x-small" class="ml-2">{{ counts.images }}</v-chip>
         </v-tab>
       </v-tabs>
 
@@ -60,58 +68,38 @@
           <!-- Overview Tab -->
           <v-window-item value="overview">
             <div class="pa-4">
-              <!-- Breadcrumb Path -->
-              <LocationBreadcrumb
-                v-if="location.parent_entity_id"
-                :location-id="location.id"
-                class="mb-4"
-              />
+              <!-- Date Card -->
+              <v-card v-if="lore.metadata?.date" variant="tonal" class="mb-4">
+                <v-card-text>
+                  <div class="text-caption text-medium-emphasis mb-1">
+                    {{ $t('lore.date') }}
+                  </div>
+                  <div class="d-flex align-center">
+                    <v-icon icon="mdi-calendar" size="small" class="mr-2" />
+                    {{ lore.metadata.date }}
+                  </div>
+                </v-card-text>
+              </v-card>
 
-              <div v-if="location.description" class="mb-4">
-                <h3 class="text-h6 mb-2">
-                  {{ $t('locations.description') }}
-                </h3>
-                <p class="text-body-1">
-                  {{ location.description }}
-                </p>
+              <!-- Description -->
+              <v-card v-if="lore.description" variant="tonal">
+                <v-card-text>
+                  <div class="text-caption text-medium-emphasis mb-2">
+                    {{ $t('lore.description') }}
+                  </div>
+                  <div class="text-body-1">
+                    {{ lore.description }}
+                  </div>
+                </v-card-text>
+              </v-card>
+
+              <!-- Empty state if no data -->
+              <div
+                v-if="!lore.description && !lore.metadata?.date"
+                class="text-center py-8 text-medium-emphasis"
+              >
+                {{ $t('common.noDetails') }}
               </div>
-
-              <!-- Metadata Grid -->
-              <v-row dense>
-                <v-col v-if="location.metadata?.type" cols="12" sm="6">
-                  <v-card variant="outlined" class="pa-3">
-                    <div class="d-flex align-center">
-                      <v-icon class="mr-3" color="primary">mdi-shape</v-icon>
-                      <div>
-                        <div class="text-caption text-medium-emphasis">{{ $t('locations.type') }}</div>
-                        <div class="font-weight-medium">{{ location.metadata.type }}</div>
-                      </div>
-                    </div>
-                  </v-card>
-                </v-col>
-                <v-col v-if="location.metadata?.region" cols="12" sm="6">
-                  <v-card variant="outlined" class="pa-3">
-                    <div class="d-flex align-center">
-                      <v-icon class="mr-3" color="secondary">mdi-map</v-icon>
-                      <div>
-                        <div class="text-caption text-medium-emphasis">{{ $t('locations.region') }}</div>
-                        <div class="font-weight-medium">{{ location.metadata.region }}</div>
-                      </div>
-                    </div>
-                  </v-card>
-                </v-col>
-                <v-col v-if="location.metadata?.notes" cols="12">
-                  <v-card variant="outlined" class="pa-3">
-                    <div class="d-flex align-start">
-                      <v-icon class="mr-3 mt-1">mdi-note-text</v-icon>
-                      <div>
-                        <div class="text-caption text-medium-emphasis">{{ $t('locations.notes') }}</div>
-                        <div class="font-weight-medium">{{ location.metadata.notes }}</div>
-                      </div>
-                    </div>
-                  </v-card>
-                </v-col>
-              </v-row>
             </div>
           </v-window-item>
 
@@ -121,8 +109,8 @@
               :entities="npcs || []"
               :loading="loadingNpcs"
               entity-type="npc"
-              :empty-message="$t('locations.noConnectedNpcs')"
-              :show-relation-type="true"
+              :empty-message="$t('lore.noLinkedNpcs')"
+              :show-relation-type="false"
               :clickable="false"
             />
           </v-window-item>
@@ -133,19 +121,31 @@
               :entities="items || []"
               :loading="loadingItems"
               entity-type="item"
-              :empty-message="$t('locations.noItems')"
-              :show-relation-type="true"
+              :empty-message="$t('lore.noLinkedItems')"
+              :show-relation-type="false"
               :clickable="false"
             />
           </v-window-item>
 
-          <!-- Lore Tab -->
-          <v-window-item value="lore">
+          <!-- Factions Tab -->
+          <v-window-item value="factions">
             <EntityRelationsList
-              :entities="lore || []"
-              :loading="loadingLore"
-              entity-type="lore"
-              :empty-message="$t('locations.noLinkedLore')"
+              :entities="factions || []"
+              :loading="loadingFactions"
+              entity-type="faction"
+              :empty-message="$t('lore.noLinkedFactions')"
+              :show-relation-type="false"
+              :clickable="false"
+            />
+          </v-window-item>
+
+          <!-- Locations Tab -->
+          <v-window-item value="locations">
+            <EntityRelationsList
+              :entities="locations || []"
+              :loading="loadingLocations"
+              entity-type="location"
+              :empty-message="$t('lore.noLinkedLocations')"
               :show-relation-type="false"
               :clickable="false"
             />
@@ -166,7 +166,7 @@
               :images="images"
               :loading="loading"
               :empty-message="$t('common.noImages')"
-              @preview="(image: Image) => $emit('preview-image', image)"
+              @preview="(image: Image) => $emit('preview-image', `/uploads/${image.image_url}`, lore.name)"
             />
           </v-window-item>
         </v-window>
@@ -175,7 +175,7 @@
       <v-divider />
 
       <v-card-actions>
-        <v-btn variant="text" prepend-icon="mdi-pencil" @click="$emit('edit', location)">
+        <v-btn variant="text" prepend-icon="mdi-pencil" @click="$emit('edit', lore)">
           {{ $t('common.edit') }}
         </v-btn>
         <v-spacer />
@@ -192,16 +192,14 @@ import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
 import EntityDocumentsView from '~/components/shared/EntityDocumentsView.vue'
 import EntityImageGalleryView from '~/components/shared/EntityImageGalleryView.vue'
 
-interface Location {
+interface Lore {
   id: number
   name: string
   description: string | null
   image_url?: string | null
-  parent_entity_id?: number | null
   metadata: {
     type?: string
-    region?: string
-    notes?: string
+    date?: string
   } | null
   created_at: string
   updated_at: string
@@ -211,22 +209,7 @@ interface Entity {
   id: number
   name: string
   description?: string | null
-  relation_type?: string
   image_url?: string | null
-  metadata?: Record<string, unknown> | null
-}
-
-interface LocationCounts {
-  npcs: number
-  lore: number
-  images: number
-  documents: number
-}
-
-interface Document {
-  id: number
-  title: string
-  content: string
 }
 
 interface Image {
@@ -235,41 +218,60 @@ interface Image {
   is_primary: boolean
 }
 
+interface Document {
+  id: number
+  title: string
+  content: string
+}
+
+interface LoreCounts {
+  npcs: number
+  items: number
+  factions: number
+  locations: number
+  documents: number
+  images: number
+}
+
 interface Props {
   modelValue: boolean
-  location: Location | null
+  lore: Lore | null
   npcs?: Entity[]
   items?: Entity[]
-  lore?: Entity[]
+  factions?: Entity[]
+  locations?: Entity[]
   documents?: Document[]
   images?: Image[]
-  counts?: LocationCounts | null
+  counts?: LoreCounts | null
   loading?: boolean
   loadingNpcs?: boolean
   loadingItems?: boolean
-  loadingLore?: boolean
+  loadingFactions?: boolean
+  loadingLocations?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   npcs: () => [],
   items: () => [],
-  lore: () => [],
+  factions: () => [],
+  locations: () => [],
   documents: () => [],
   images: () => [],
   counts: null,
   loading: false,
   loadingNpcs: false,
   loadingItems: false,
-  loadingLore: false,
+  loadingFactions: false,
+  loadingLocations: false,
 })
 
 defineEmits<{
   'update:modelValue': [value: boolean]
-  edit: [location: Location]
-  'preview-image': [image: Image]
+  edit: [lore: Lore]
+  'preview-image': [imageUrl: string, title: string]
 }>()
 
-const { t: _t } = useI18n() // Needed for $t in template
+const { t: _t } = useI18n()
 
 // Local tab state
 const currentTab = ref('overview')
@@ -283,4 +285,17 @@ watch(
     }
   },
 )
+
+// Helper function for type colors
+function getTypeColor(type: string) {
+  const colors: Record<string, string> = {
+    myth: 'purple',
+    legend: 'orange',
+    history: 'blue',
+    rumor: 'grey',
+    prophecy: 'amber',
+    secret: 'red',
+  }
+  return colors[type] || 'grey'
+}
 </script>
