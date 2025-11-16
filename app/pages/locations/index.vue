@@ -594,34 +594,14 @@
 
             <!-- Lore Tab -->
             <v-window-item value="lore">
-              <div class="pa-4">
-                <div v-if="loadingLore" class="text-center py-8">
-                  <v-progress-circular indeterminate color="primary" />
-                </div>
-                <div v-else-if="!locationLore || locationLore.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('locations.noLore') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="lore in locationLore"
-                    :key="lore.id"
-                    :prepend-avatar="lore.image_url ? `/uploads/${lore.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="lore.image_url" size="48">
-                        <v-img :src="`/uploads/${lore.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-book-open-variant</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ lore.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="lore.description">
-                      {{ lore.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
+              <EntityRelationsList
+                :entities="locationLore || []"
+                :loading="loadingLore"
+                entity-type="lore"
+                :empty-message="$t('locations.noLore')"
+                :show-relation-type="false"
+                :clickable="false"
+              />
             </v-window-item>
 
             <!-- Documents Tab -->
@@ -686,6 +666,7 @@ import LocationItemsTab from '~/components/locations/LocationItemsTab.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
+import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
 
 interface Location {
   id: number

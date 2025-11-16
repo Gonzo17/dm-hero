@@ -593,118 +593,50 @@
 
             <!-- NPCs Tab -->
             <v-window-item value="npcs">
-              <div class="pa-4">
-                <div v-if="!linkedNpcs || linkedNpcs.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('lore.noLinkedNpcs') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="npc in linkedNpcs"
-                    :key="npc.id"
-                    :prepend-avatar="npc.image_url ? `/uploads/${npc.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="npc.image_url" size="48">
-                        <v-img :src="`/uploads/${npc.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-account</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ npc.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="npc.description">
-                      {{ npc.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
+              <EntityRelationsList
+                :entities="linkedNpcs || []"
+                :loading="false"
+                entity-type="npc"
+                :empty-message="$t('lore.noLinkedNpcs')"
+                :show-relation-type="false"
+                :clickable="false"
+              />
             </v-window-item>
 
             <!-- Items Tab -->
             <v-window-item value="items">
-              <div class="pa-4">
-                <div v-if="!linkedItems || linkedItems.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('lore.noLinkedItems') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="item in linkedItems"
-                    :key="item.id"
-                    :prepend-avatar="item.image_url ? `/uploads/${item.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="item.image_url" size="48">
-                        <v-img :src="`/uploads/${item.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-treasure-chest</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ item.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="item.description">
-                      {{ item.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
+              <EntityRelationsList
+                :entities="linkedItems || []"
+                :loading="false"
+                entity-type="item"
+                :empty-message="$t('lore.noLinkedItems')"
+                :show-relation-type="false"
+                :clickable="false"
+              />
             </v-window-item>
 
             <!-- Factions Tab -->
             <v-window-item value="factions">
-              <div class="pa-4">
-                <div v-if="!linkedFactions || linkedFactions.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('lore.noLinkedFactions') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="faction in linkedFactions"
-                    :key="faction.id"
-                    :prepend-avatar="faction.image_url ? `/uploads/${faction.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="faction.image_url" size="48">
-                        <v-img :src="`/uploads/${faction.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-shield-account</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ faction.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="faction.description">
-                      {{ faction.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
+              <EntityRelationsList
+                :entities="linkedFactions || []"
+                :loading="false"
+                entity-type="faction"
+                :empty-message="$t('lore.noLinkedFactions')"
+                :show-relation-type="false"
+                :clickable="false"
+              />
             </v-window-item>
 
             <!-- Locations Tab -->
             <v-window-item value="locations">
-              <div class="pa-4">
-                <div v-if="!linkedLocations || linkedLocations.length === 0" class="text-center py-8 text-medium-emphasis">
-                  {{ $t('lore.noLinkedLocations') }}
-                </div>
-                <v-list v-else lines="two">
-                  <v-list-item
-                    v-for="location in linkedLocations"
-                    :key="location.id"
-                    :prepend-avatar="location.image_url ? `/uploads/${location.image_url}` : undefined"
-                  >
-                    <template #prepend>
-                      <v-avatar v-if="location.image_url" size="48">
-                        <v-img :src="`/uploads/${location.image_url}`" />
-                      </v-avatar>
-                      <v-avatar v-else color="grey-lighten-2" size="48">
-                        <v-icon>mdi-map-marker</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-medium">{{ location.name }}</v-list-item-title>
-                    <v-list-item-subtitle v-if="location.description">
-                      {{ location.description }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
+              <EntityRelationsList
+                :entities="linkedLocations || []"
+                :loading="false"
+                entity-type="location"
+                :empty-message="$t('lore.noLinkedLocations')"
+                :show-relation-type="false"
+                :clickable="false"
+              />
             </v-window-item>
 
             <!-- Documents Tab -->
@@ -783,6 +715,7 @@ import { LORE_TYPES } from '../../../types/lore'
 import LoreCard from '~/components/lore/LoreCard.vue'
 import EntityDocuments from '~/components/shared/EntityDocuments.vue'
 import EntityImageGallery from '~/components/shared/EntityImageGallery.vue'
+import EntityRelationsList from '~/components/shared/EntityRelationsList.vue'
 import ImagePreviewDialog from '~/components/shared/ImagePreviewDialog.vue'
 
 // Composables
