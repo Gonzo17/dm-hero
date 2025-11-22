@@ -251,10 +251,16 @@
 
           <!-- Items Tab -->
           <v-tabs-window-item value="items">
-            <NpcItemsTab
-              :items="npcItems"
+            <EntityItemsTab
+              :linked-items="npcItems"
               :available-items="availableItems"
-              :adding="addingItem"
+              :loading="addingItem"
+              :show-avatar="false"
+              :show-relation-type="true"
+              :show-quantity="true"
+              :show-equipped="true"
+              :show-rarity="true"
+              :relation-type-suggestions="npcItemRelationTypeSuggestions"
               @add="(payload) => $emit('add-item', payload)"
               @remove="(id) => $emit('remove-item', id)"
             />
@@ -272,11 +278,11 @@
 
           <!-- Lore Tab -->
           <v-tabs-window-item value="lore">
-            <NpcLoreTab
+            <EntityLoreTab
               v-if="editingNpc"
               :linked-lore="linkedLore"
-              :lore-items="loreItems"
-              :loading-lore="loadingLore"
+              :available-lore="availableLore"
+              :loading="loadingLore"
               @add="$emit('add-lore', $event)"
               @remove="$emit('remove-lore', $event)"
             />
@@ -452,12 +458,12 @@
 import type { NPC } from '~~/types/npc'
 import type { Item } from '~~/types/item'
 import type { Lore } from '~~/types/lore'
-import type { NpcItem, NpcMembership, LoreSelectItem } from '~~/types/npc-components'
+import type { NpcItem, NpcMembership } from '~~/types/npc-components'
 import NpcRelationsTab from './NpcRelationsTab.vue'
 import EntityLocationsTab from '../shared/EntityLocationsTab.vue'
 import NpcMembershipsTab from './NpcMembershipsTab.vue'
-import NpcItemsTab from './NpcItemsTab.vue'
-import NpcLoreTab from './NpcLoreTab.vue'
+import EntityItemsTab from '../shared/EntityItemsTab.vue'
+import EntityLoreTab from '../shared/EntityLoreTab.vue'
 import NpcNotesTab from './NpcNotesTab.vue'
 import EntityDocuments from '../shared/EntityDocuments.vue'
 import EntityImageUpload from '../shared/EntityImageUpload.vue'
@@ -501,6 +507,18 @@ function getNpcStatusColor(status: string): string {
   }
   return colors[status] || 'grey'
 }
+
+// Item relation type suggestions for NPCs
+const npcItemRelationTypeSuggestions = computed(() => [
+  { title: t('npcs.itemRelationTypes.owns'), value: 'owns' },
+  { title: t('npcs.itemRelationTypes.carries'), value: 'carries' },
+  { title: t('npcs.itemRelationTypes.wields'), value: 'wields' },
+  { title: t('npcs.itemRelationTypes.wears'), value: 'wears' },
+  { title: t('npcs.itemRelationTypes.seeks'), value: 'seeks' },
+  { title: t('npcs.itemRelationTypes.guards'), value: 'guards' },
+  { title: t('npcs.itemRelationTypes.stole'), value: 'stole' },
+  { title: t('npcs.itemRelationTypes.lost'), value: 'lost' },
+])
 
 // Interfaces
 interface NpcForm {
@@ -563,7 +581,7 @@ interface Props {
   availableNpcs: Array<Pick<NPC, 'id' | 'name' | 'image_url'>>
   availableFactions: Array<{ id: number; name: string }>
   availableItems: Array<Pick<Item, 'id' | 'name'>>
-  loreItems: LoreSelectItem[]
+  availableLore: Array<{ id: number; name: string }>
   // Loading states
   saving: boolean
   addingNpcRelation: boolean
@@ -606,7 +624,7 @@ const emit = defineEmits<{
   'add-item': [
     payload: {
       itemId: number
-      relationType: string
+      relationType?: string
       quantity?: number
       equipped?: boolean
     },

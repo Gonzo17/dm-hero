@@ -123,7 +123,7 @@
       :available-npcs="npcsForSelect || []"
       :available-factions="factions || []"
       :available-items="items || []"
-      :lore-items="loreItems"
+      :available-lore="loreForSelect"
       :saving="saving"
       :adding-npc-relation="addingNpcRelation"
       :adding-membership="addingMembership"
@@ -378,14 +378,14 @@ async function loadReferenceData() {
 // Translated race/class items for dropdowns (uses DB translations or i18n fallback)
 // IMPORTANT: We read locale.value to make this computed reactive to language changes
 const raceItems = computed(() => {
-  const _lang = locale.value // Track locale dependency
+  void locale.value // Track locale dependency for reactivity
   return races.value.map((r: (typeof races.value)[0]) => ({
     title: useRaceName(r),
     value: r.name,
   }))
 })
 const classItems = computed(() => {
-  const _lang = locale.value // Track locale dependency
+  void locale.value // Track locale dependency for reactivity
   return classes.value.map((c: (typeof classes.value)[0]) => ({
     title: useClassName(c),
     value: c.name,
@@ -789,8 +789,10 @@ async function loadNpcItems() {
   }
 }
 
-async function addItemToNpc(payload: { itemId: number; relationType: string; quantity?: number; equipped?: boolean }) {
-  if (!editingNpc.value || !payload.itemId || !payload.relationType) return
+async function addItemToNpc(payload: { itemId: number; relationType?: string; quantity?: number; equipped?: boolean }) {
+  if (!editingNpc.value || !payload.itemId) return
+
+  const relationType = payload.relationType || 'owns'
 
   addingItem.value = true
 
@@ -799,7 +801,7 @@ async function addItemToNpc(payload: { itemId: number; relationType: string; qua
       method: 'POST',
       body: {
         itemId: payload.itemId,
-        relationType: payload.relationType,
+        relationType,
         quantity: payload.quantity || undefined,
         equipped: payload.equipped,
       },
@@ -1124,13 +1126,8 @@ function closeDialog() {
   }
 }
 
-// Lore items for autocomplete
-const loreItems = computed(() => {
-  return entitiesStore.loreForSelect.map((lore: { id: number; name: string }) => ({
-    title: lore.name,
-    value: lore.id,
-  }))
-})
+// Lore for autocomplete (used in EntityLoreTab)
+const loreForSelect = computed(() => entitiesStore.loreForSelect)
 
 // Load linked lore when editing NPC
 watch(

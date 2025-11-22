@@ -304,9 +304,10 @@
 
             <!-- NPCs Tab -->
             <v-tabs-window-item value="npcs">
-              <LocationNpcsTab
+              <SharedEntityNpcsTab
                 :linked-npcs="linkedNpcs"
                 :available-npcs="npcForSelect"
+                :show-avatar="true"
                 @add="addNpcRelation"
                 @remove="removeNpcRelation"
               />
@@ -314,9 +315,12 @@
 
             <!-- Items Tab -->
             <v-tabs-window-item value="items">
-              <LocationItemsTab
+              <SharedEntityItemsTab
                 :linked-items="linkedItems"
                 :available-items="itemsForSelect"
+                :show-avatar="true"
+                :show-relation-type="true"
+                :relation-type-suggestions="itemRelationTypeSuggestions"
                 @add="addItemRelation"
                 @remove="removeItemRelation"
               />
@@ -324,7 +328,7 @@
 
             <!-- Lore Tab -->
             <v-tabs-window-item value="lore">
-              <LocationLoreTab
+              <SharedEntityLoreTab
                 :linked-lore="linkedLore"
                 :available-lore="loreForSelect"
                 @add="addLoreRelation"
@@ -521,7 +525,7 @@ function handleSearchClear() {
   if (inputTimeout) clearTimeout(inputTimeout)
 }
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const entitiesStore = useEntitiesStore()
@@ -649,6 +653,15 @@ const itemsForSelect = computed(() => {
       name: item.name,
     }))
 })
+
+const itemRelationTypeSuggestions = computed(() => [
+  { title: t('locations.itemRelationTypes.contains'), value: 'contains' },
+  { title: t('locations.itemRelationTypes.hidden'), value: 'hidden' },
+  { title: t('locations.itemRelationTypes.displayed'), value: 'displayed' },
+  { title: t('locations.itemRelationTypes.stored'), value: 'stored' },
+  { title: t('locations.itemRelationTypes.lost'), value: 'lost' },
+  { title: t('locations.itemRelationTypes.guarded'), value: 'guarded' },
+])
 
 // Debounce search with abort controller
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -1182,14 +1195,14 @@ async function loadLinkedNpcs() {
   }
 }
 
-async function addNpcRelation(npcId: number) {
-  if (!editingLocation.value || !npcId) return
+async function addNpcRelation(payload: { npcId: number }) {
+  if (!editingLocation.value || !payload.npcId) return
 
   try {
     await $fetch('/api/entity-relations', {
       method: 'POST',
       body: {
-        fromEntityId: npcId,
+        fromEntityId: payload.npcId,
         toEntityId: editingLocation.value.id,
         relationType: 'befindet sich in',
         relationNotes: null,
@@ -1197,7 +1210,7 @@ async function addNpcRelation(npcId: number) {
     })
 
     // Find the NPC and add to local array (no reload needed)
-    const npc = entitiesStore.npcs?.find((n) => n.id === npcId)
+    const npc = entitiesStore.npcs?.find((n) => n.id === payload.npcId)
     if (npc) {
       linkedNpcs.value.push({
         id: npc.id,
@@ -1305,30 +1318,21 @@ async function addLoreRelation(loreId: number) {
   }
 }
 
-async function removeLoreRelation(loreId: number) {
+async function removeLoreRelation(relationId: number) {
   if (!editingLocation.value) return
 
   try {
-    // Find the relation
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: loreId,
-        toEntityId: editingLocation.value.id,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
+    // Remove from local array by relation ID
+    linkedLore.value = linkedLore.value.filter((lore) => lore.id !== relationId)
 
-      // Remove from local array (no reload needed)
-      linkedLore.value = linkedLore.value.filter((lore) => lore.id !== loreId)
-
-      // Update counts reactively
-      if (locationCounts.value && locationCounts.value.lore > 0) {
-        locationCounts.value.lore--
-      }
+    // Update counts reactively
+    if (locationCounts.value && locationCounts.value.lore > 0) {
+      locationCounts.value.lore--
     }
   } catch (error) {
     console.error('Failed to remove Lore relation:', error)
@@ -1355,8 +1359,10 @@ async function loadLinkedItems() {
   }
 }
 
-async function addItemRelation(payload: { itemId: number; relationType: string }) {
-  if (!editingLocation.value || !payload.itemId || !payload.relationType) return
+async function addItemRelation(payload: { itemId: number; relationType?: string }) {
+  if (!editingLocation.value || !payload.itemId) return
+
+  const relationType = payload.relationType || 'contains'
 
   try {
     await $fetch('/api/entity-relations', {
@@ -1364,7 +1370,7 @@ async function addItemRelation(payload: { itemId: number; relationType: string }
       body: {
         fromEntityId: editingLocation.value.id,
         toEntityId: payload.itemId,
-        relationType: payload.relationType,
+        relationType,
         relationNotes: null,
       },
     })
@@ -1375,25 +1381,16 @@ async function addItemRelation(payload: { itemId: number; relationType: string }
   }
 }
 
-async function removeItemRelation(itemId: number) {
+async function removeItemRelation(relationId: number) {
   if (!editingLocation.value) return
 
   try {
-    // Find the relation
-    const relation = await $fetch<{ id: number } | null>('/api/entity-relations/find', {
-      query: {
-        fromEntityId: editingLocation.value.id,
-        toEntityId: itemId,
-      },
+    // The id passed is already the relation ID from the API
+    await $fetch(`/api/entity-relations/${relationId}`, {
+      method: 'DELETE',
     })
 
-    if (relation) {
-      await $fetch(`/api/entity-relations/${relation.id}`, {
-        method: 'DELETE',
-      })
-
-      await loadLinkedItems()
-    }
+    await loadLinkedItems()
   } catch (error) {
     console.error('Failed to remove Item relation:', error)
   }

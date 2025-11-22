@@ -240,13 +240,16 @@ interface Item {
   description: string | null
   image_url?: string | null
   metadata: {
-    type?: string
-    rarity?: string
-    value?: string
-    weight?: string
+    type?: string | null
+    rarity?: string | null
+    value?: number | null
+    weight?: number | null
     charges?: string
     properties?: string
     attunement?: boolean
+    damage?: string
+    armor_class?: number
+    notes?: string
   } | null
   created_at: string
   updated_at: string
