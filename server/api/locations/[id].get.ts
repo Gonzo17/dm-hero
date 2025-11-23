@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import type { EntityTypeRow, EntityRow } from '../../types/database'
 
 export default defineEventHandler((event) => {
   const db = getDb()
@@ -12,9 +13,9 @@ export default defineEventHandler((event) => {
   }
 
   // Get Location entity type ID
-  const entityType = db.prepare('SELECT id FROM entity_types WHERE name = ?').get('Location') as
-    | { id: number }
-    | undefined
+  const entityType = db
+    .prepare<[string], EntityTypeRow>('SELECT id FROM entity_types WHERE name = ?')
+    .get('Location')
 
   if (!entityType) {
     throw createError({
@@ -25,7 +26,7 @@ export default defineEventHandler((event) => {
 
   // Get the location
   const location = db
-    .prepare(
+    .prepare<[string, number], EntityRow>(
       `
     SELECT
       e.id,

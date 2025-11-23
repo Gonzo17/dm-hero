@@ -87,3 +87,17 @@ export interface EntityDocumentRow {
   created_at: string
   updated_at: string
 }
+
+export interface ItemRarityRow {
+  id: number
+  name: string
+  sort_order: number
+  deleted_at: string | null
+}
+
+export interface ItemTypeRow {
+  id: number
+  name: string
+  sort_order: number
+  deleted_at: string | null
+}

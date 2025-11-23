@@ -41,7 +41,7 @@ export function parseSearchQuery(query: string): ParsedQuery {
   // Special case: Quoted phrase only (e.g., "die grauen jäger")
   if (hasQuotes && !hasAnd && !hasOr && !hasNot) {
     const quoteMatch = trimmed.match(/"([^"]+)"/)
-    if (quoteMatch) {
+    if (quoteMatch && quoteMatch[1]) {
       const phrase = quoteMatch[1]
       // Split phrase into words for cross-entity search (Lore, Faction, Location names)
       // This allows "böser frosch" to match NPCs linked to Lore "Böser Frosch"

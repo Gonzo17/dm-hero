@@ -46,9 +46,10 @@ export function decrypt(encryptedData: string): string {
     throw new Error('Invalid encrypted data format')
   }
 
-  const iv = Buffer.from(parts[0], 'hex')
-  const authTag = Buffer.from(parts[1], 'hex')
-  const encrypted = parts[2]
+  const [ivHex, authTagHex, encrypted] = parts as [string, string, string]
+
+  const iv = Buffer.from(ivHex, 'hex')
+  const authTag = Buffer.from(authTagHex, 'hex')
 
   const decipher = createDecipheriv('aes-256-gcm', key, iv)
   decipher.setAuthTag(authTag)

@@ -1,4 +1,5 @@
-import type { NPC, NpcCounts } from '~/types/npc'
+import type { NPC, NpcCounts } from '../../types/npc.js'
+
 
 /**
  * Composable to load NPC counts asynchronously

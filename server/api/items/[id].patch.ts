@@ -1,6 +1,7 @@
 import { getDb } from '../../utils/db'
 import { convertMetadataToKeys } from '../../utils/i18n-lookup'
 import type { ItemMetadata } from '../../../types/item'
+import type { EntityRow } from '../../types/database'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
   ).run(name, description, convertedMetadata ? JSON.stringify(convertedMetadata) : null, id)
 
   const item = db
-    .prepare(
+    .prepare<[string], EntityRow>(
       `
     SELECT * FROM entities WHERE id = ? AND deleted_at IS NULL
   `,

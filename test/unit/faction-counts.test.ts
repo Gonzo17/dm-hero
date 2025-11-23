@@ -589,11 +589,11 @@ describe('Faction Counts API - Full Response', () => {
       .get(factionId, loreTypeId) as { count: number }
 
     const documentsCount = db
-      .prepare(`SELECT COUNT(*) as count FROM entity_documents WHERE entity_id = ?`)
+      .prepare('SELECT COUNT(*) as count FROM entity_documents WHERE entity_id = ?')
       .get(factionId) as { count: number }
 
     const imagesCount = db
-      .prepare(`SELECT COUNT(*) as count FROM entity_images WHERE entity_id = ?`)
+      .prepare('SELECT COUNT(*) as count FROM entity_images WHERE entity_id = ?')
       .get(factionId) as { count: number }
 
     // Expected API response format

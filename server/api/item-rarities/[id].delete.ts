@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import type { ItemRarityRow, EntityTypeRow, CountRow } from '../../types/database'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if rarity exists
   const itemRarity = db
-    .prepare(
+    .prepare<[string], ItemRarityRow>(
       `
     SELECT * FROM item_rarities WHERE id = ? AND deleted_at IS NULL
   `,
@@ -28,8 +29,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Check if rarity is in use by any Items
-  const itemEntityTypeId = db
-    .prepare(
+  const itemEntityType = db
+    .prepare<[], EntityTypeRow>(
       `
     SELECT id FROM entity_types WHERE name = 'Item'
   `,
@@ -37,14 +38,14 @@ export default defineEventHandler(async (event) => {
     .get()
 
   const inUse = db
-    .prepare(
+    .prepare<[number | undefined, string], CountRow>(
       `
     SELECT COUNT(*) as count FROM entities
     WHERE type_id = ? AND deleted_at IS NULL
     AND json_extract(metadata, '$.rarity') = ?
   `,
     )
-    .get(itemEntityTypeId?.id, itemRarity.name)
+    .get(itemEntityType?.id, itemRarity.name)
 
   if (inUse && inUse.count > 0) {
     throw createError({

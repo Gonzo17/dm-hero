@@ -589,6 +589,7 @@ export default defineEventHandler(async (event) => {
           // Check if at least one term (or its variants) matches
           for (let i = 0; i < parsedQuery.terms.length; i++) {
             const termObj = expandedTerms[i]
+            if (!termObj) continue
             const shouldCheckMetadata = !termObj.blockMetadata
 
             // Check if ANY variant matches
@@ -672,6 +673,7 @@ export default defineEventHandler(async (event) => {
           // Check if ALL terms (or their expanded keys) match
           for (let i = 0; i < parsedQuery.terms.length; i++) {
             const termObj = expandedTerms[i]
+            if (!termObj) continue
             const shouldCheckMetadata = !termObj.blockMetadata
             let termMatches = isPlayerMatch // Player match can satisfy any term
 

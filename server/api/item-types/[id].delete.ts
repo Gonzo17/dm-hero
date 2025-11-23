@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import type { ItemTypeRow, EntityTypeRow, CountRow } from '../../types/database'
 
 export default defineEventHandler(async (event) => {
   const db = getDb()
@@ -13,7 +14,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if type exists
   const itemType = db
-    .prepare(
+    .prepare<[string], ItemTypeRow>(
       `
     SELECT * FROM item_types WHERE id = ? AND deleted_at IS NULL
   `,
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
 
   // Check if type is in use by any Items
   const itemEntityTypeId = db
-    .prepare(
+    .prepare<[], EntityTypeRow>(
       `
     SELECT id FROM entity_types WHERE name = 'Item'
   `,
@@ -37,7 +38,7 @@ export default defineEventHandler(async (event) => {
     .get()
 
   const inUse = db
-    .prepare(
+    .prepare<[number | undefined, string], CountRow>(
       `
     SELECT COUNT(*) as count FROM entities
     WHERE type_id = ? AND deleted_at IS NULL
