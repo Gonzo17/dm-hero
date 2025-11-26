@@ -68,17 +68,41 @@ async function startServer() {
   }
 
   const paths = getDataPaths()
-  const serverPath = path.join(__dirname, '..', '.output', 'server', 'index.mjs')
 
-  if (!existsSync(serverPath)) {
-    console.error('[Electron] Server not found at:', serverPath)
+  // Find server path - check multiple locations for packaged vs dev
+  const possiblePaths = [
+    // Packaged with extraResources: resources/.output/...
+    path.join(process.resourcesPath, '.output', 'server', 'index.mjs'),
+    // Packaged without ASAR: resources/app/.output/...
+    path.join(process.resourcesPath, 'app', '.output', 'server', 'index.mjs'),
+    // Packaged with ASAR unpacked: resources/app.asar.unpacked/.output/...
+    path.join(process.resourcesPath, 'app.asar.unpacked', '.output', 'server', 'index.mjs'),
+    // Dev mode: project root/.output/...
+    path.join(__dirname, '..', '.output', 'server', 'index.mjs'),
+  ]
+
+  let serverPath = null
+  for (const p of possiblePaths) {
+    console.log('[Electron] Checking path:', p, 'exists:', existsSync(p))
+    if (existsSync(p)) {
+      serverPath = p
+      break
+    }
+  }
+
+  if (!serverPath) {
+    console.error('[Electron] Server not found! Checked paths:', possiblePaths)
     console.error('[Electron] Run "pnpm build" first!')
     app.quit()
     return
   }
 
+  const serverDir = path.dirname(serverPath)
+  const outputDir = path.dirname(serverDir) // .output folder
+
   console.log('[Electron] Starting Nitro server...')
   console.log('[Electron]   Server path:', serverPath)
+  console.log('[Electron]   Output dir:', outputDir)
   console.log('[Electron]   DATABASE_PATH:', paths.databasePath)
   console.log('[Electron]   UPLOAD_PATH:', paths.uploadPath)
 
@@ -91,7 +115,9 @@ async function startServer() {
       PORT: String(PROD_SERVER_PORT),
       DATABASE_PATH: paths.databasePath,
       UPLOAD_PATH: paths.uploadPath,
+      NITRO_OUTPUT_DIR: outputDir,
     },
+    cwd: outputDir,
     stdio: 'pipe',
   })
 
