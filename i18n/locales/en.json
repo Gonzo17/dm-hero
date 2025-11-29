@@ -818,7 +818,10 @@
     "linkFaction": "Link Faction",
     "linkLore": "Link Lore",
     "linkPlayer": "Link Player",
-    "goToPage": "Go to Page"
+    "goToPage": "Go to Page",
+    "cover": "Cover",
+    "coverImages": "Cover Images",
+    "noCoverImagesText": "Upload a cover image or generate one with AI"
   },
   "documents": {
     "title": "Documents",
@@ -1137,7 +1140,13 @@
     "leapYearMonthHint": "Which month gets extra days",
     "leapYearExtraDays": "Extra Days",
     "isLeapYear": "Leap Year",
-    "advanceDay": "Next Day"
+    "advanceDay": "Next Day",
+    "sessions": "Sessions",
+    "newSession": "New Session",
+    "sessionContinues": "Session #{number} (cont.)",
+    "multiDaySession": "This session spans multiple days",
+    "continues": "Cont.",
+    "ends": "Ends"
   },
   "chaos": {
     "title": "Chaos Graph",

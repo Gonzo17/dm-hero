@@ -6,7 +6,16 @@
         <h1 class="text-h4">{{ $t('calendar.title') }}</h1>
         <p class="text-medium-emphasis">{{ $t('calendar.subtitle') }}</p>
       </div>
-      <div class="d-flex ga-2">
+      <div class="d-flex ga-2 align-center">
+        <v-btn-toggle v-model="showSessions" mandatory density="compact" class="mr-2">
+          <v-btn :value="true" variant="tonal" size="small">
+            <v-icon start>mdi-book-open-page-variant</v-icon>
+            {{ $t('calendar.sessions') }}
+            <v-chip size="x-small" class="ml-1" :color="showSessions ? 'primary' : undefined">
+              {{ sessions.length }}
+            </v-chip>
+          </v-btn>
+        </v-btn-toggle>
         <v-btn variant="tonal" prepend-icon="mdi-cog" @click="openSettingsDialog">
           {{ $t('calendar.settings') }}
         </v-btn>
@@ -101,6 +110,7 @@
                 'is-today': isToday(day),
                 'is-selected': selectedDay === day,
                 'has-events': getEventsForDay(day).length > 0,
+                'has-sessions': dayHasSessions(day),
               }"
               @click="selectDay(day)"
             >
@@ -118,6 +128,73 @@
                   </v-icon>
                 </div>
               </div>
+
+              <!-- Sessions (shown before events) -->
+              <div v-if="getSessionsForDay(day).length > 0" class="day-sessions">
+                <v-tooltip
+                  v-for="session in getSessionsForDay(day).slice(0, 2)"
+                  :key="'session-' + session.id"
+                  location="top"
+                >
+                  <template #activator="{ props: tooltipProps }">
+                    <div
+                      v-bind="tooltipProps"
+                      class="session-item"
+                      :class="{
+                        'session-start': session.isStart,
+                        'session-end': session.isEnd,
+                        'session-continuation': session.isContinuation && !session.isEnd,
+                        'session-single': session.isStart && session.isEnd,
+                      }"
+                      @click.stop="goToSession(session)"
+                    >
+                      <v-icon v-if="session.isStart" size="10" class="mr-1">mdi-book-open-page-variant</v-icon>
+                      <v-icon v-else size="10" class="mr-1">mdi-arrow-right</v-icon>
+                      <span class="session-title">
+                        <template v-if="session.isStart">
+                          #{{ session.session_number }} {{ session.title }}
+                        </template>
+                        <template v-else>
+                          {{ $t('calendar.sessionContinues', { number: session.session_number }) }}
+                        </template>
+                      </span>
+                    </div>
+                  </template>
+                  <div style="max-width: 300px">
+                    <div class="d-flex align-center ga-2 mb-1">
+                      <v-chip size="x-small" color="blue">
+                        #{{ session.session_number }}
+                      </v-chip>
+                      <strong>{{ session.title }}</strong>
+                    </div>
+                    <div v-if="session.summary" class="text-caption mb-1">
+                      {{ session.summary.slice(0, 150) }}{{ session.summary.length > 150 ? '...' : '' }}
+                    </div>
+                    <div class="d-flex ga-2 text-caption">
+                      <span v-if="session.attendance_count > 0">
+                        <v-icon size="12">mdi-account-group</v-icon> {{ session.attendance_count }}
+                      </span>
+                      <span v-if="session.duration_minutes">
+                        <v-icon size="12">mdi-clock</v-icon> {{ Math.floor(session.duration_minutes / 60) }}h
+                      </span>
+                      <span v-if="session.date">
+                        <v-icon size="12">mdi-calendar</v-icon> {{ session.date }}
+                      </span>
+                    </div>
+                    <div v-if="!session.isStart && !session.isEnd" class="text-caption mt-1 text-warning">
+                      {{ $t('calendar.multiDaySession') }}
+                    </div>
+                  </div>
+                </v-tooltip>
+                <div
+                  v-if="getSessionsForDay(day).length > 2"
+                  class="session-more text-caption text-medium-emphasis"
+                >
+                  +{{ getSessionsForDay(day).length - 2 }} {{ $t('calendar.sessions').toLowerCase() }}
+                </div>
+              </div>
+
+              <!-- Events -->
               <div v-if="getEventsForDay(day).length > 0" class="day-events">
                 <v-tooltip
                   v-for="event in getEventsForDay(day).slice(0, 3)"
@@ -153,37 +230,113 @@
         </v-card-text>
       </v-card>
 
-      <!-- Events for selected day -->
+      <!-- Details for selected day -->
       <v-card v-if="selectedDay">
-        <v-card-title>
-          {{ $t('calendar.events') }} - {{ selectedDay }}. {{ currentMonthName }} {{ viewYear }}
+        <v-card-title class="d-flex align-center justify-space-between">
+          <span>{{ selectedDay }}. {{ currentMonthName }} {{ viewYear }}</span>
+          <div class="d-flex ga-2">
+            <v-btn
+              size="small"
+              variant="tonal"
+              color="blue"
+              prepend-icon="mdi-book-plus"
+              @click="createSessionOnDay(selectedDay)"
+            >
+              {{ $t('calendar.newSession') }}
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="tonal"
+              prepend-icon="mdi-plus"
+              @click="openNewEventDialog(selectedDay)"
+            >
+              {{ $t('calendar.newEvent') }}
+            </v-btn>
+          </div>
         </v-card-title>
         <v-card-text>
-          <v-list v-if="selectedDayEvents.length > 0">
-            <v-list-item
-              v-for="event in selectedDayEvents"
-              :key="event.id"
-              @click="editEvent(event)"
-            >
-              <template #prepend>
-                <v-avatar :color="event.color || getEventTypeColor(event.event_type)" size="40">
-                  <v-icon color="white">{{ getEventTypeIcon(event.event_type) }}</v-icon>
-                </v-avatar>
-              </template>
-              <v-list-item-title>{{ event.title }}</v-list-item-title>
-              <v-list-item-subtitle>
-                <span>{{ $t('calendar.eventTypes.' + event.event_type) }}</span>
-                <span v-if="event.entity_name"> · {{ event.entity_name }}</span>
-                <v-chip v-if="event.is_recurring" size="x-small" class="ml-2">
-                  {{ $t('calendar.isRecurring') }}
-                </v-chip>
-              </v-list-item-subtitle>
-              <template #append>
-                <v-btn icon="mdi-delete" variant="text" color="error" @click.stop="deleteEvent(event)" />
-              </template>
-            </v-list-item>
-          </v-list>
-          <div v-else class="text-center text-medium-emphasis py-4">
+          <!-- Sessions for selected day -->
+          <div v-if="selectedDaySessions.length > 0" class="mb-4">
+            <div class="text-overline text-medium-emphasis mb-2">
+              <v-icon size="16" class="mr-1">mdi-book-open-page-variant</v-icon>
+              {{ $t('calendar.sessions') }} ({{ selectedDaySessions.length }})
+            </div>
+            <v-list density="compact">
+              <v-list-item
+                v-for="session in selectedDaySessions"
+                :key="'selected-session-' + session.id"
+                :class="{ 'session-continuation-item': session.isContinuation }"
+                @click="goToSession(session)"
+              >
+                <template #prepend>
+                  <v-avatar color="blue" size="40">
+                    <span class="text-white font-weight-bold">#{{ session.session_number }}</span>
+                  </v-avatar>
+                </template>
+                <v-list-item-title>
+                  {{ session.title }}
+                  <v-chip v-if="session.isContinuation && !session.isStart" size="x-small" class="ml-2" color="info">
+                    {{ $t('calendar.continues') }}
+                  </v-chip>
+                  <v-chip v-if="session.isEnd && !session.isStart" size="x-small" class="ml-1" color="success">
+                    {{ $t('calendar.ends') }}
+                  </v-chip>
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  <span v-if="session.summary">{{ session.summary.slice(0, 80) }}{{ session.summary.length > 80 ? '...' : '' }}</span>
+                  <span v-else class="text-disabled font-italic">{{ $t('common.noDescription') }}</span>
+                </v-list-item-subtitle>
+                <template #append>
+                  <div class="d-flex align-center ga-2">
+                    <v-chip v-if="session.attendance_count > 0" size="x-small" variant="tonal">
+                      <v-icon start size="12">mdi-account-group</v-icon>
+                      {{ session.attendance_count }}
+                    </v-chip>
+                    <v-chip v-if="session.duration_minutes" size="x-small" variant="tonal">
+                      <v-icon start size="12">mdi-clock</v-icon>
+                      {{ Math.floor(session.duration_minutes / 60) }}h
+                    </v-chip>
+                    <v-btn icon="mdi-chevron-right" variant="text" size="small" />
+                  </div>
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
+
+          <!-- Events for selected day -->
+          <div v-if="selectedDayEvents.length > 0">
+            <div class="text-overline text-medium-emphasis mb-2">
+              <v-icon size="16" class="mr-1">mdi-calendar</v-icon>
+              {{ $t('calendar.events') }} ({{ selectedDayEvents.length }})
+            </div>
+            <v-list density="compact">
+              <v-list-item
+                v-for="event in selectedDayEvents"
+                :key="event.id"
+                @click="editEvent(event)"
+              >
+                <template #prepend>
+                  <v-avatar :color="event.color || getEventTypeColor(event.event_type)" size="40">
+                    <v-icon color="white">{{ getEventTypeIcon(event.event_type) }}</v-icon>
+                  </v-avatar>
+                </template>
+                <v-list-item-title>{{ event.title }}</v-list-item-title>
+                <v-list-item-subtitle>
+                  <span>{{ $t('calendar.eventTypes.' + event.event_type) }}</span>
+                  <span v-if="event.entity_name"> · {{ event.entity_name }}</span>
+                  <v-chip v-if="event.is_recurring" size="x-small" class="ml-2">
+                    {{ $t('calendar.isRecurring') }}
+                  </v-chip>
+                </v-list-item-subtitle>
+                <template #append>
+                  <v-btn icon="mdi-delete" variant="text" color="error" @click.stop="deleteEvent(event)" />
+                </template>
+              </v-list-item>
+            </v-list>
+          </div>
+
+          <!-- Empty state -->
+          <div v-if="selectedDayEvents.length === 0 && selectedDaySessions.length === 0" class="text-center text-medium-emphasis py-4">
             {{ $t('calendar.noEvents') }}
           </div>
         </v-card-text>
@@ -287,6 +440,19 @@ interface CalendarEvent {
   entity_type?: string
 }
 
+interface CalendarSession {
+  id: number
+  session_number: number | null
+  title: string
+  summary: string | null
+  in_game_day_start: number | null
+  in_game_day_end: number | null
+  date: string | null
+  duration_minutes: number | null
+  attendance_count: number
+  mentions_count: number
+}
+
 interface CalendarConfig {
   config: {
     current_year: number
@@ -321,6 +487,8 @@ const calendarConfig = ref<CalendarConfig>({
   moons: [],
 })
 const events = ref<CalendarEvent[]>([])
+const sessions = ref<CalendarSession[]>([])
+const showSessions = ref(true) // Toggle for session visibility
 const viewYear = ref(1)
 const viewMonth = ref(1)
 const selectedDay = ref<number | null>(null)
@@ -333,6 +501,7 @@ const deleting = ref(false)
 const advancingDay = ref(false)
 const editingEvent = ref<CalendarEvent | null>(null)
 const eventToDelete = ref<CalendarEvent | null>(null)
+const router = useRouter()
 
 // Settings form
 const settingsForm = ref({
@@ -384,6 +553,11 @@ const currentDateFormatted = computed(() => {
 const selectedDayEvents = computed(() => {
   if (!selectedDay.value) return []
   return getEventsForDay(selectedDay.value)
+})
+
+const selectedDaySessions = computed(() => {
+  if (!selectedDay.value) return []
+  return getSessionsForDay(selectedDay.value)
 })
 
 // Get moon phases for current date (shown in header)
@@ -442,6 +616,43 @@ function getEventsForDay(day: number): CalendarEvent[] {
     if (e.is_recurring) return true
     return e.year === viewYear.value
   })
+}
+
+// Get sessions that are active on a specific day (supports multi-day sessions)
+function getSessionsForDay(day: number): Array<CalendarSession & { isStart: boolean; isEnd: boolean; isContinuation: boolean }> {
+  if (!showSessions.value) return []
+
+  const absoluteDay = getTotalDays(viewYear.value, viewMonth.value, day)
+
+  return sessions.value
+    .filter((s) => {
+      if (s.in_game_day_start === null) return false
+      const endDay = s.in_game_day_end ?? s.in_game_day_start
+      return absoluteDay >= s.in_game_day_start && absoluteDay <= endDay
+    })
+    .map((s) => ({
+      ...s,
+      isStart: s.in_game_day_start === absoluteDay,
+      isEnd: (s.in_game_day_end ?? s.in_game_day_start) === absoluteDay,
+      isContinuation: s.in_game_day_start !== null && s.in_game_day_start < absoluteDay,
+    }))
+    .sort((a, b) => (a.session_number ?? 0) - (b.session_number ?? 0))
+}
+
+// Check if day has any sessions
+function dayHasSessions(day: number): boolean {
+  return getSessionsForDay(day).length > 0
+}
+
+// Navigate to session page
+function goToSession(session: CalendarSession) {
+  router.push(`/sessions?highlight=${session.id}`)
+}
+
+// Create new session on selected day
+function createSessionOnDay(day: number) {
+  const absoluteDay = getTotalDays(viewYear.value, viewMonth.value, day)
+  router.push(`/sessions?newSession=true&inGameDay=${absoluteDay}`)
 }
 
 function getEventTypeIcon(type: string): string {
@@ -878,10 +1089,21 @@ async function loadEntities() {
   }
 }
 
+async function loadSessions() {
+  if (!campaignStore.activeCampaignId) return
+  try {
+    const data = await $fetch<CalendarSession[]>('/api/calendar/sessions', {
+      query: { campaignId: campaignStore.activeCampaignId },
+    })
+    sessions.value = data
+  } catch (error) {
+    console.error('Failed to load sessions:', error)
+  }
+}
+
 onMounted(async () => {
   await loadConfig()
-  await loadEvents()
-  await loadEntities()
+  await Promise.all([loadEvents(), loadSessions(), loadEntities()])
 })
 </script>
 
@@ -937,9 +1159,79 @@ onMounted(async () => {
   background: rgba(var(--v-theme-secondary), 0.05);
 }
 
+.calendar-day.has-sessions {
+  background: rgba(33, 150, 243, 0.08);
+}
+
+.calendar-day.has-sessions.is-today {
+  background: rgba(33, 150, 243, 0.15);
+}
+
 .day-number {
   font-weight: 500;
   margin-bottom: 4px;
+}
+
+/* Sessions in calendar */
+.day-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(33, 150, 243, 0.2);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  overflow: hidden;
+  border-left: 3px solid rgb(33, 150, 243);
+}
+
+.session-item:hover {
+  background: rgba(33, 150, 243, 0.35);
+}
+
+.session-item.session-start {
+  border-left: 3px solid rgb(33, 150, 243);
+  border-radius: 4px 4px 4px 4px;
+}
+
+.session-item.session-continuation {
+  border-left: 3px dashed rgba(33, 150, 243, 0.6);
+  background: rgba(33, 150, 243, 0.1);
+  opacity: 0.85;
+}
+
+.session-item.session-end {
+  border-left: 3px solid rgb(76, 175, 80);
+}
+
+.session-item.session-single {
+  border-left: 3px solid rgb(33, 150, 243);
+}
+
+.session-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.session-more {
+  padding: 2px 4px;
+  text-align: center;
+}
+
+.session-continuation-item {
+  opacity: 0.8;
+  border-left: 3px dashed rgba(33, 150, 243, 0.5);
 }
 
 .day-events {

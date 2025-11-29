@@ -38,13 +38,30 @@
               <v-icon size="x-small" class="mr-1">mdi-sword-cross</v-icon>
               {{ formatAbsoluteDay(session.in_game_day_start) }}
               <span v-if="session.in_game_day_end && session.in_game_day_end !== session.in_game_day_start">
-                <br>→ {{ formatAbsoluteDay(session.in_game_day_end) }}
+                <br/>→ {{ formatAbsoluteDay(session.in_game_day_end) }}
               </span>
             </div>
           </div>
         </template>
 
         <v-card hover class="session-card">
+          <!-- Cover Image (if available) -->
+          <v-img
+            v-if="session.cover_image_url"
+            :src="`/uploads/${session.cover_image_url}`"
+            height="160"
+            cover
+            class="session-cover"
+            style="cursor: pointer"
+            @click="openImagePreview(`/uploads/${session.cover_image_url}`, session.title)"
+          >
+            <template #placeholder>
+              <div class="d-flex align-center justify-center fill-height">
+                <v-progress-circular indeterminate color="primary" />
+              </div>
+            </template>
+          </v-img>
+
           <v-card-title class="d-flex align-center pb-1">
             <v-icon icon="mdi-book-open-page-variant" class="mr-2" color="primary" />
             <span v-if="session.session_number" class="text-medium-emphasis mr-2">
@@ -121,6 +138,10 @@
           <v-tab value="details">
             <v-icon start> mdi-information </v-icon>
             {{ $t('sessions.details') }}
+          </v-tab>
+          <v-tab value="cover">
+            <v-icon start> mdi-image </v-icon>
+            {{ $t('sessions.cover') }}
           </v-tab>
           <v-tab value="attendance">
             <v-icon start> mdi-account-check </v-icon>
@@ -353,6 +374,18 @@
                   </MdEditor>
                 </ClientOnly>
               </div>
+            </v-tabs-window-item>
+
+            <!-- Cover Tab -->
+            <v-tabs-window-item value="cover">
+              <SessionsSessionImageGallery
+                v-if="editingSession"
+                :session-id="editingSession.id"
+                :session-title="sessionForm.title"
+                :session-summary="sessionForm.summary"
+                @preview-image="openImagePreview"
+                @images-updated="reloadSessions"
+              />
             </v-tabs-window-item>
 
             <!-- Attendance Tab -->
@@ -769,6 +802,13 @@
       :entity-type="viewingEntityType"
       :entity-id="previewEntityId"
     />
+
+    <!-- Image Preview Dialog -->
+    <SharedImagePreviewDialog
+      v-model="showImagePreview"
+      :image-url="previewImageUrl"
+      :title="previewImageTitle"
+    />
   </v-container>
 </template>
 
@@ -792,6 +832,7 @@ interface Session {
   duration_minutes: number | null
   created_at: string
   updated_at: string
+  cover_image_url: string | null
 }
 
 interface EntityMention {
@@ -852,6 +893,23 @@ const saving = ref(false)
 const deleting = ref(false)
 const uploadingImage = ref(false)
 const sessionDialogTab = ref('details')
+
+// Image preview state
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
+const previewImageTitle = ref('')
+
+// Image preview function
+function openImagePreview(url: string, title: string) {
+  previewImageUrl.value = url
+  previewImageTitle.value = title
+  showImagePreview.value = true
+}
+
+// Reload sessions when images are updated
+async function reloadSessions() {
+  await loadSessions()
+}
 
 // Attendance tracking
 interface PlayerEntity {

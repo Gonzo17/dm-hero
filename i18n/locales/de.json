@@ -839,7 +839,10 @@
     "linkFaction": "Fraktion verknüpfen",
     "linkLore": "Wissen verknüpfen",
     "linkPlayer": "Spieler verknüpfen",
-    "goToPage": "Zur Seite"
+    "goToPage": "Zur Seite",
+    "cover": "Cover",
+    "coverImages": "Cover-Bilder",
+    "noCoverImagesText": "Lade ein Cover-Bild hoch oder generiere eines mit KI"
   },
   "documents": {
     "title": "Dokumente",
@@ -1158,7 +1161,13 @@
     "leapYearMonthHint": "Welcher Monat bekommt extra Tage",
     "leapYearExtraDays": "Extra Tage",
     "isLeapYear": "Schaltjahr",
-    "advanceDay": "Nächster Tag"
+    "advanceDay": "Nächster Tag",
+    "sessions": "Sessions",
+    "newSession": "Neue Session",
+    "sessionContinues": "Session #{number} (Forts.)",
+    "multiDaySession": "Diese Session erstreckt sich über mehrere Tage",
+    "continues": "Forts.",
+    "ends": "Ende"
   },
   "chaos": {
     "title": "Chaos-Graph",

@@ -1,22 +1,16 @@
 import { getDb } from '../../utils/db'
 
-interface SessionRow {
+interface CalendarSession {
   id: number
   session_number: number | null
   title: string
-  date: string | null
   summary: string | null
-  notes: string | null
-  in_game_date_start: string | null
-  in_game_date_end: string | null
   in_game_day_start: number | null
   in_game_day_end: number | null
+  date: string | null // Real-world date
   duration_minutes: number | null
-  created_at: string
-  updated_at: string
-  mentions_count: number
   attendance_count: number
-  cover_image_url: string | null
+  mentions_count: number
 }
 
 export default defineEventHandler((event) => {
@@ -31,7 +25,8 @@ export default defineEventHandler((event) => {
     })
   }
 
-  // Get all Sessions for this campaign with counts and cover image
+  // Get all sessions that have in-game dates set
+  // These will be displayed on the calendar
   const sessions = db
     .prepare(
       `
@@ -39,26 +34,21 @@ export default defineEventHandler((event) => {
       s.id,
       s.session_number,
       s.title,
-      s.date,
       s.summary,
-      s.notes,
-      s.in_game_date_start,
-      s.in_game_date_end,
       s.in_game_day_start,
       s.in_game_day_end,
+      s.date,
       s.duration_minutes,
-      s.created_at,
-      s.updated_at,
-      (SELECT COUNT(*) FROM session_mentions WHERE session_id = s.id) as mentions_count,
       (SELECT COUNT(*) FROM session_attendance WHERE session_id = s.id) as attendance_count,
-      (SELECT image_url FROM session_images WHERE session_id = s.id AND is_primary = 1 LIMIT 1) as cover_image_url
+      (SELECT COUNT(*) FROM session_mentions WHERE session_id = s.id) as mentions_count
     FROM sessions s
     WHERE s.campaign_id = ?
       AND s.deleted_at IS NULL
-    ORDER BY s.session_number DESC, s.date DESC
+      AND s.in_game_day_start IS NOT NULL
+    ORDER BY s.in_game_day_start ASC, s.session_number ASC
   `,
     )
-    .all(campaignId) as SessionRow[]
+    .all(campaignId) as CalendarSession[]
 
   return sessions
 })

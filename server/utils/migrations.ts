@@ -1107,6 +1107,32 @@ export const migrations: Migration[] = [
       console.log('✅ Migration 21: Added absolute day fields to sessions for calendar integration')
     },
   },
+  {
+    version: 22,
+    name: 'session_images',
+    up: (db) => {
+      // Create session_images table for session cover images (like entity_images)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS session_images (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          image_url TEXT NOT NULL,
+          caption TEXT,
+          is_primary INTEGER NOT NULL DEFAULT 0,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Create index for faster lookups
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_session_images_session_id ON session_images(session_id)
+      `)
+
+      console.log('✅ Migration 22: Session images table created for cover images')
+    },
+  },
 ]
 
 export async function runMigrations(db: Database.Database) {
