@@ -21,27 +21,18 @@ async function fetchLatestRelease() {
     loading.value = true
     error.value = false
 
-    // First try the latest stable release
-    let response = await fetch(
-      'https://api.github.com/repos/Flo0806/dm-hero/releases/latest'
+    // Get all releases (includes pre-releases) and pick the first one
+    const response = await fetch(
+      'https://api.github.com/repos/Flo0806/dm-hero/releases'
     )
 
-    // If no stable release, get all releases and pick the first one (includes pre-releases)
     if (!response.ok) {
-      response = await fetch(
-        'https://api.github.com/repos/Flo0806/dm-hero/releases'
-      )
+      throw new Error('Failed to fetch releases')
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch releases')
-      }
-
-      const releases = await response.json()
-      if (releases.length > 0) {
-        latestRelease.value = releases[0]
-      }
-    } else {
-      latestRelease.value = await response.json()
+    const releases = await response.json()
+    if (releases.length > 0) {
+      latestRelease.value = releases[0]
     }
   } catch {
     error.value = true
@@ -203,9 +194,12 @@ onMounted(() => {
 
             <p class="text-body-2 text-medium-emphasis mb-4">
               {{ t(`download.platforms.${platform.key}.description`) }}
-              <template v-if="platform.available && getFileSize(platform.key as 'windows' | 'linux' | 'mac')">
+              <template v-if="platform.available && latestRelease">
                 <br />
-                <span class="text-caption">
+                <v-chip size="x-small" color="primary" variant="outlined" class="mt-1">
+                  {{ latestRelease.tag_name }}
+                </v-chip>
+                <span v-if="getFileSize(platform.key as 'windows' | 'linux' | 'mac')" class="text-caption ml-2">
                   {{ getFileSize(platform.key as 'windows' | 'linux' | 'mac') }}
                 </span>
               </template>
