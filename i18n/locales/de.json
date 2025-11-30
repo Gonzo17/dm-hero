@@ -197,6 +197,7 @@
     "npcRelations": "NPC-Beziehungen",
     "selectNpc": "NPC auswählen",
     "addNpcRelation": "NPC-Beziehung hinzufügen",
+    "editRelation": "Beziehung bearbeiten",
     "npcRelationType": "Beziehungstyp",
     "npcRelationTypePlaceholder": "z.B. Verbündeter, Feind",
     "npcRelationTypes": {
@@ -875,6 +876,28 @@
     "moveDown": "Nach unten",
     "uploadPdf": "PDF hochladen",
     "previewPdf": "PDF Vorschau"
+  },
+  "audio": {
+    "audio": "Audio",
+    "sessionAudio": "Session-Aufnahmen",
+    "uploadAudio": "Audio hochladen",
+    "noAudio": "Keine Aufnahmen",
+    "noAudioText": "Lade Audio-Dateien hoch um Session-Aufnahmen zu verwalten",
+    "untitled": "Ohne Titel",
+    "deleteConfirm": "Möchtest du diese Audio-Datei wirklich löschen?",
+    "uploadError": "Fehler beim Hochladen der Audio-Datei",
+    "skipBack": "10s zurück",
+    "skipForward": "10s vor",
+    "stop": "Stopp",
+    "playbackSpeed": "Wiedergabegeschwindigkeit",
+    "markers": "Marker",
+    "addMarker": "Marker hinzufügen",
+    "markerLabel": "Bezeichnung",
+    "markerDescription": "Beschreibung (optional)",
+    "timestamp": "Zeitstempel",
+    "useCurrentTime": "Aktuelle Zeit",
+    "markerColor": "Farbe",
+    "saveMarkerError": "Fehler beim Speichern des Markers"
   },
   "common": {
     "edit": "Bearbeiten",

@@ -16,7 +16,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  // Get NPC-to-NPC relations count (only NPCs, not Locations/Factions/Items)
+  // Get NPC-to-NPC relations count (bidirectional - both directions)
   const npcTypeId = db.prepare("SELECT id FROM entity_types WHERE name = 'NPC'").get() as
     | { id: number }
     | undefined
@@ -26,15 +26,27 @@ export default defineEventHandler((event) => {
     relationsCount = db
       .prepare(
         `
-      SELECT COUNT(*) as count
-      FROM entity_relations er
-      INNER JOIN entities e ON e.id = er.to_entity_id
-      WHERE er.from_entity_id = ?
-        AND e.type_id = ?
-        AND e.deleted_at IS NULL
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM (
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.to_entity_id
+        WHERE er.from_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+
+        UNION
+
+        SELECT e.id
+        FROM entity_relations er
+        INNER JOIN entities e ON e.id = er.from_entity_id
+        WHERE er.to_entity_id = ?
+          AND e.type_id = ?
+          AND e.deleted_at IS NULL
+      ) AS e
     `,
       )
-      .get(Number(npcId), npcTypeId.id) as { count: number }
+      .get(Number(npcId), npcTypeId.id, Number(npcId), npcTypeId.id) as { count: number }
   }
 
   // Get documents count

@@ -44,12 +44,17 @@ function getDataPaths() {
   const dataDir = path.join(userDataPath, 'data')
   const uploadsDir = path.join(userDataPath, 'uploads')
 
+  const audioDir = path.join(uploadsDir, 'audio')
+
   // Ensure directories exist
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
   if (!existsSync(uploadsDir)) {
     mkdirSync(uploadsDir, { recursive: true })
+  }
+  if (!existsSync(audioDir)) {
+    mkdirSync(audioDir, { recursive: true })
   }
 
   return {

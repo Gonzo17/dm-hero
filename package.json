@@ -45,6 +45,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "db:reset": "node scripts/test-data/reset-and-seed.js",
     "electron:rebuild": "node scripts/electron-rebuild.js",
     "electron:rebuild:linux": "cd node_modules/.pnpm/better-sqlite3@12.4.6/node_modules/better-sqlite3 && HOME=~/.electron-gyp npx node-gyp rebuild --target=39.2.3 --arch=x64 --dist-url=https://electronjs.org/headers",
     "electron:start": "cross-env NODE_ENV=production electron .",

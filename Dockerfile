@@ -66,9 +66,10 @@ RUN cd node_modules/.pnpm/better-sqlite3@12.4.1/node_modules/better-sqlite3 && \
 # Go back to app root
 WORKDIR /app
 
-# Create data directory for SQLite database
+# Create data directory for SQLite database and upload directories
 RUN mkdir -p /app/data && \
     mkdir -p /app/.output/public/uploads && \
+    mkdir -p /app/.output/public/uploads/audio && \
     chown -R node:node /app
 
 # Use non-root user for security

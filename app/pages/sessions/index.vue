@@ -128,7 +128,7 @@
     </v-empty-state>
 
     <!-- Create/Edit Session Dialog -->
-    <v-dialog v-model="showCreateDialog" max-width="1000" scrollable :persistent="saving">
+    <v-dialog v-model="showCreateDialog" max-width="1000" scrollable :persistent="saving || uploadingAudio">
       <v-card>
         <v-card-title>
           {{ editingSession ? $t('sessions.edit') : $t('sessions.create') }}
@@ -142,6 +142,10 @@
           <v-tab value="cover">
             <v-icon start> mdi-image </v-icon>
             {{ $t('sessions.cover') }}
+          </v-tab>
+          <v-tab value="audio">
+            <v-icon start> mdi-microphone </v-icon>
+            {{ $t('audio.audio') }}
           </v-tab>
           <v-tab value="attendance">
             <v-icon start> mdi-account-check </v-icon>
@@ -385,6 +389,16 @@
                 :session-summary="sessionForm.summary"
                 @preview-image="openImagePreview"
                 @images-updated="reloadSessions"
+              />
+            </v-tabs-window-item>
+
+            <!-- Audio Tab -->
+            <v-tabs-window-item value="audio">
+              <SessionsSessionAudioGallery
+                v-if="editingSession"
+                :session-id="editingSession.id"
+                @audio-updated="reloadSessions"
+                @uploading="(v) => (uploadingAudio = v)"
               />
             </v-tabs-window-item>
 
@@ -640,12 +654,12 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="closeDialog">
+          <v-btn variant="text" :disabled="saving || uploadingAudio" @click="closeDialog">
             {{ $t('common.cancel') }}
           </v-btn>
           <v-btn
             color="primary"
-            :disabled="!sessionForm.title"
+            :disabled="!sessionForm.title || uploadingAudio"
             :loading="saving"
             @click="saveSession"
           >
@@ -892,6 +906,7 @@ const previewEntityId = ref<number | null>(null)
 const saving = ref(false)
 const deleting = ref(false)
 const uploadingImage = ref(false)
+const uploadingAudio = ref(false)
 const sessionDialogTab = ref('details')
 
 // Image preview state

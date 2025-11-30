@@ -22,43 +22,65 @@
         </template>
         <v-list-item-title>
           {{ relation.related_npc_name || relation.to_entity_name }}
-          <v-chip v-if="relation.direction === 'incoming'" size="x-small" color="info" class="ml-2">
-            ←
-          </v-chip>
         </v-list-item-title>
         <v-list-item-subtitle>
           <v-chip size="small" class="mr-1" color="primary" variant="tonal">
             {{ $t(`npcs.npcRelationTypes.${relation.relation_type}`, relation.relation_type) }}
           </v-chip>
-          <span v-if="relation.notes" class="text-caption">
-            {{ relation.notes }}
+          <span v-if="getNotesText(relation.notes)" class="text-caption">
+            {{ getNotesText(relation.notes) }}
           </span>
         </v-list-item-subtitle>
         <template #append>
-          <template v-if="relation.direction === 'outgoing'">
-            <v-btn
-              icon="mdi-pencil"
-              variant="text"
-              size="small"
-              @click="$emit('edit', relation)"
-            />
-            <v-btn
-              icon="mdi-delete"
-              variant="text"
-              size="small"
-              color="error"
-              @click="$emit('remove', relation.id)"
-            />
-          </template>
-          <v-tooltip v-else location="left">
-            <template #activator="{ props }">
-              <v-icon v-bind="props" color="info" size="small"> mdi-information </v-icon>
-            </template>
-            {{ $t('npcs.incomingRelationTooltip') }}
-          </v-tooltip>
+          <v-btn
+            icon="mdi-pencil"
+            variant="text"
+            size="small"
+            color="primary"
+            class="mr-1"
+            @click="openEditDialog(relation)"
+          />
+          <v-btn
+            icon="mdi-delete"
+            variant="text"
+            size="small"
+            color="error"
+            @click="$emit('remove', relation.id)"
+          />
         </template>
       </v-list-item>
     </v-list>
+
+    <!-- Edit Relation Dialog -->
+    <v-dialog v-model="editDialog" max-width="500">
+      <v-card>
+        <v-card-title>{{ $t('npcs.editRelation') }}</v-card-title>
+        <v-card-text>
+          <v-combobox
+            v-model="editRelationType"
+            :items="npcRelationTypeSuggestions"
+            :label="$t('npcs.npcRelationType')"
+            variant="outlined"
+            class="mb-3"
+          />
+          <v-textarea
+            v-model="editNotes"
+            :label="$t('npcs.relationNotes')"
+            variant="outlined"
+            rows="2"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="editDialog = false">
+            {{ $t('common.cancel') }}
+          </v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveEdit">
+            {{ $t('common.save') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Add NPC Relation Form -->
     <v-expansion-panels class="mb-3">
@@ -120,7 +142,7 @@ interface NpcRelation {
   related_npc_name: string
   related_npc_type: string
   relation_type: string
-  notes: string | null
+  notes: string | Record<string, unknown> | null
   image_url: string | null
   direction: 'outgoing' | 'incoming'
   // Legacy fields for backwards compat with locations
@@ -142,7 +164,7 @@ interface Props {
 
 interface Emits {
   (e: 'add', payload: { npcId: number; relationType: string; notes?: string }): void
-  (e: 'edit', relation: NpcRelation): void
+  (e: 'update', payload: { relationId: number; relationType: string; notes?: string }): void
   (e: 'remove', relationId: number): void
 }
 
@@ -152,6 +174,13 @@ const emit = defineEmits<Emits>()
 const localNpcId = ref<number | null>(null)
 const localRelationType = ref('')
 const localNotes = ref('')
+
+// Edit dialog state
+const editDialog = ref(false)
+const editRelationId = ref<number | null>(null)
+const editRelationType = ref('')
+const editNotes = ref('')
+const saving = ref(false)
 
 const npcRelationTypeSuggestions = computed(() => [
   t('npcs.npcRelationTypes.ally'),
@@ -163,6 +192,36 @@ const npcRelationTypeSuggestions = computed(() => [
   t('npcs.npcRelationTypes.student'),
   t('npcs.npcRelationTypes.colleague'),
 ])
+
+// Extract text from notes (can be string, object with text property, or null)
+function getNotesText(notes: string | Record<string, unknown> | null): string {
+  if (!notes) return ''
+  if (typeof notes === 'string') return notes
+  if (typeof notes === 'object' && 'text' in notes) return String(notes.text)
+  return ''
+}
+
+function openEditDialog(relation: NpcRelation) {
+  editRelationId.value = relation.id
+  editRelationType.value = relation.relation_type
+  editNotes.value = getNotesText(relation.notes)
+  editDialog.value = true
+}
+
+function saveEdit() {
+  if (!editRelationId.value || !editRelationType.value) return
+
+  saving.value = true
+  emit('update', {
+    relationId: editRelationId.value,
+    relationType: editRelationType.value,
+    notes: editNotes.value || undefined,
+  })
+
+  // Close dialog (parent will reload data)
+  editDialog.value = false
+  saving.value = false
+}
 
 function handleAdd() {
   if (!localNpcId.value || !localRelationType.value) return

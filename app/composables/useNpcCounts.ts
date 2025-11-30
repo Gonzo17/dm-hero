@@ -1,14 +1,14 @@
 import type { NPC, NpcCounts } from '../../types/npc.js'
 
+// SHARED STATE - outside the function so all components share the same cache
+const loadingCounts = ref<Set<number>>(new Set())
+const countsMap = reactive<Record<number, NpcCounts | undefined>>({})
 
 /**
  * Composable to load NPC counts asynchronously
- * Updates the NPC object reactively with _counts property
+ * Uses shared state so all NpcCards share the same cache
  */
 export function useNpcCounts() {
-  const loadingCounts = ref<Set<number>>(new Set())
-  // Store counts as reactive object (not Map - Vue can't track Map.get())
-  const countsMap = reactive<Record<number, NpcCounts | undefined>>({})
 
   async function loadNpcCounts(npc: NPC): Promise<void> {
     // Skip if already loading
@@ -73,9 +73,39 @@ export function useNpcCounts() {
   function clearCountsCache(): void {
     // Clear all properties from reactive object
     Object.keys(countsMap).forEach((key) => {
-      countsMap[Number(key)] = undefined  
+      countsMap[Number(key)] = undefined
     })
     loadingCounts.value.clear()
+  }
+
+  /**
+   * Invalidate counts for specific NPC IDs
+   * They will be reloaded on next access
+   */
+  function invalidateCountsFor(npcIds: number[]): void {
+    for (const id of npcIds) {
+      countsMap[id] = undefined
+      loadingCounts.value.delete(id)
+    }
+  }
+
+  /**
+   * Reload counts for specific NPC IDs
+   * Use this after relation changes to update affected NPCs
+   */
+  async function reloadCountsFor(npcIds: number[]): Promise<void> {
+    // First invalidate
+    invalidateCountsFor(npcIds)
+    // Then reload in parallel
+    const promises = npcIds.map(async (id) => {
+      try {
+        const counts = await $fetch<NpcCounts>(`/api/npcs/${id}/counts`)
+        countsMap[id] = counts
+      } catch (error) {
+        console.error(`Failed to reload counts for NPC ${id}:`, error)
+      }
+    })
+    await Promise.all(promises)
   }
 
   return {
@@ -84,6 +114,8 @@ export function useNpcCounts() {
     getCounts,
     reloadNpcCounts,
     clearCountsCache,
+    invalidateCountsFor,
+    reloadCountsFor,
     loadingCounts: computed(() => loadingCounts.value),
   }
 }

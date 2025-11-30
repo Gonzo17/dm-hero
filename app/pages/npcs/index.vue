@@ -118,7 +118,7 @@
       <NpcEditDialog
         :show="showEditDialog"
         :npc-id="editingNpcId"
-        @update:show="showEditDialog = $event"
+        @update:show="handleEditDialogClose"
         @saved="handleNpcSaved"
         @created="handleNpcCreated"
       />
@@ -413,7 +413,12 @@ function openCreateDialog() {
   showEditDialog.value = true
 }
 
-// Handle saved NPC (edit mode) - Store already reloaded counts
+// Handle edit dialog close
+function handleEditDialogClose(show: boolean) {
+  showEditDialog.value = show
+}
+
+// Handle saved NPC (edit mode)
 async function handleNpcSaved(_npc: NPC) {
   // If user is searching, re-execute search to update FTS5 results
   if (searchQuery.value && searchQuery.value.trim().length > 0) {

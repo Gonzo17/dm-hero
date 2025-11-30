@@ -235,6 +235,8 @@
                 :available-npcs="availableNpcs"
                 :adding="addingRelation"
                 @add="addNpcRelation"
+                @update="updateNpcRelation"
+                @remove="removeNpcRelation"
               />
             </v-tabs-window-item>
 
@@ -925,6 +927,8 @@ async function addNpcRelation(payload: { npcId: number; relationType: string; no
     })
     await loadRelations(npc.value.id)
     await loadCounts(npc.value.id)
+    // Also update the other NPC's counts in the store (for card badges)
+    entitiesStore.loadNpcCounts(payload.npcId)
   } catch (e) {
     console.error('[NpcEditDialog] Failed to add relation:', e)
   } finally {
@@ -966,6 +970,45 @@ async function removeMembership(id: number) {
     await loadCounts(npc.value.id)
   } catch (e) {
     console.error('[NpcEditDialog] Failed to remove membership:', e)
+  }
+}
+
+async function removeNpcRelation(id: number) {
+  if (!npc.value) return
+
+  // Find the other NPC's ID before deleting
+  const relation = npcRelations.value.find((r) => r.id === id)
+  const otherNpcId = relation?.related_npc_id
+
+  try {
+    await $fetch(`/api/entity-relations/${id}`, {
+      method: 'DELETE',
+    })
+    await loadRelations(npc.value.id)
+    await loadCounts(npc.value.id)
+    // Also update the other NPC's counts in the store (for card badges)
+    if (otherNpcId) {
+      entitiesStore.loadNpcCounts(otherNpcId)
+    }
+  } catch (e) {
+    console.error('[NpcEditDialog] Failed to remove NPC relation:', e)
+  }
+}
+
+async function updateNpcRelation(payload: { relationId: number; relationType: string; notes?: string }) {
+  if (!npc.value) return
+
+  try {
+    await $fetch(`/api/entity-relations/${payload.relationId}`, {
+      method: 'PATCH',
+      body: {
+        relationType: payload.relationType,
+        notes: payload.notes ? JSON.stringify({ text: payload.notes }) : null,
+      },
+    })
+    await loadRelations(npc.value.id)
+  } catch (e) {
+    console.error('[NpcEditDialog] Failed to update NPC relation:', e)
   }
 }
 

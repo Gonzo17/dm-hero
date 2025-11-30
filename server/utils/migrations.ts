@@ -1133,6 +1133,54 @@ export const migrations: Migration[] = [
       console.log('✅ Migration 22: Session images table created for cover images')
     },
   },
+  {
+    version: 23,
+    name: 'session_audio',
+    up: (db) => {
+      // Create session_audio table for audio recordings
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS session_audio (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          session_id INTEGER NOT NULL,
+          audio_url TEXT NOT NULL,
+          title TEXT,
+          description TEXT,
+          duration_seconds INTEGER,
+          file_size_bytes INTEGER,
+          mime_type TEXT,
+          display_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Create index for faster lookups
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_session_audio_session_id ON session_audio(session_id)
+      `)
+
+      // Create audio_markers table for timestamp markers
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS audio_markers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          audio_id INTEGER NOT NULL,
+          timestamp_seconds REAL NOT NULL,
+          label TEXT NOT NULL,
+          description TEXT,
+          color TEXT DEFAULT '#D4A574',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (audio_id) REFERENCES session_audio(id) ON DELETE CASCADE
+        )
+      `)
+
+      // Create index for faster marker lookups
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_audio_markers_audio_id ON audio_markers(audio_id)
+      `)
+
+      console.log('✅ Migration 23: Session audio and markers tables created')
+    },
+  },
 ]
 
 export async function runMigrations(db: Database.Database) {
