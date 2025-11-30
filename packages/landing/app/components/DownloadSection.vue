@@ -49,8 +49,8 @@ function getDownloadUrl(platform: 'windows' | 'linux' | 'mac'): string | null {
   const assets = latestRelease.value.assets
 
   if (platform === 'windows') {
-    const exe = assets.find((a) => a.name.endsWith('.exe') || a.name.includes('win'))
-    return exe?.browser_download_url || null
+    const zip = assets.find((a) => a.name.endsWith('.zip') && a.name.toLowerCase().includes('win'))
+    return zip?.browser_download_url || null
   }
 
   if (platform === 'linux') {
@@ -80,7 +80,7 @@ function getFileSize(platform: 'windows' | 'linux' | 'mac'): string | null {
   let asset = null
 
   if (platform === 'windows') {
-    asset = assets.find((a) => a.name.endsWith('.exe') || a.name.includes('win'))
+    asset = assets.find((a) => a.name.endsWith('.zip') && a.name.toLowerCase().includes('win'))
   } else if (platform === 'linux') {
     asset = assets.find((a) => a.name.endsWith('.AppImage'))
   } else if (platform === 'mac') {

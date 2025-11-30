@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dm-hero-windows
-          path: packages/app/dist-electron/*.exe
+          path: packages/app/dist-electron/*.zip
           if-no-files-found: warn
 
   create-release:

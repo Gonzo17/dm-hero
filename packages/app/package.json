@@ -75,13 +75,9 @@
     "asar": true,
     "win": {
       "target": [
-        "nsis"
+        "zip"
       ],
       "signAndEditExecutable": false
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
     },
     "linux": {
       "target": [
