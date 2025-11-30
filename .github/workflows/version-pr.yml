@@ -42,9 +42,10 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          # Skip automatic versioning - we handle versions manually for alpha/beta
-          version: echo "Skipping auto-version - update package.json manually before merging"
+          # Use changeset version to consume changesets and update CHANGELOGs
+          # Manual version bump still required in package.json before merging
+          version: pnpm changeset version
           title: 'chore: Release Updates'
-          commit: 'chore: update changelogs'
+          commit: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
