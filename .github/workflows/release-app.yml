@@ -24,24 +24,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check for changesets
-        id: check
-        run: |
-          # If there are still changeset files (excluding README), this is NOT a release
-          if ls .changeset/*.md 2>/dev/null | grep -v "README" | grep -q .; then
-            echo "Changesets still present - not a release merge"
-            echo "should_release=false" >> $GITHUB_OUTPUT
-          else
-            echo "No changesets found - this is a release merge"
-            echo "should_release=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Get version
         id: version
         run: |
           VERSION=$(node -p "require('./packages/app/package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "App version: $VERSION"
+
+      - name: Check if release exists
+        id: check
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Check if tag already exists on remote
+          if git ls-remote --tags origin | grep -q "refs/tags/v${VERSION}$"; then
+            echo "Tag v${VERSION} already exists - skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Tag v${VERSION} does not exist - will create release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          fi
 
   build-docker:
     needs: check
