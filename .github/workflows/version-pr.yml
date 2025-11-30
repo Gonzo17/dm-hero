@@ -1,0 +1,49 @@
+name: Version PR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.changeset/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Changeset PR
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # Skip automatic versioning - we handle versions manually for alpha/beta
+          version: echo "Skipping auto-version - update package.json manually before merging"
+          title: 'chore: Release Updates'
+          commit: 'chore: update changelogs'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
