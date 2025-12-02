@@ -51,7 +51,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const metadata = faction.metadata ? JSON.parse(faction.metadata as string) : {}
+  const metadata = faction.metadata ? JSON.parse(faction.metadata as string) : null
 
   return {
     id: faction.id,
@@ -60,6 +60,6 @@ export default defineEventHandler((event) => {
     image_url: faction.image_url,
     created_at: faction.created_at,
     updated_at: faction.updated_at,
-    ...metadata,
+    metadata,
   }
 })

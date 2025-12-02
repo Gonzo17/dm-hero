@@ -1,4 +1,5 @@
 import { getDb } from '../../utils/db'
+import { getUploadPath } from '../../utils/paths'
 import { randomUUID } from 'crypto'
 import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
@@ -84,15 +85,15 @@ export default defineEventHandler(async (event) => {
   const ext = extMap[mimeType] || '.mp3'
   const filename = `${randomUUID()}${ext}`
 
-  // Ensure audio directory exists
-  const audioDir = join(process.cwd(), 'public', 'uploads', 'audio')
+  // Ensure audio directory exists (uses getUploadPath for Electron compatibility)
+  const audioDir = join(getUploadPath(), 'audio')
   if (!existsSync(audioDir)) {
     await mkdir(audioDir, { recursive: true })
   }
 
   // Write file
   const filePath = join(audioDir, filename)
-  await writeFile(filePath, audioFile.data)
+  await writeFile(filePath, new Uint8Array(audioFile.data))
 
   // Get current max display_order for this session
   const maxDisplayOrder = db

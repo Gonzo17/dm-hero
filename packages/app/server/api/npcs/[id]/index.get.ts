@@ -51,7 +51,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const metadata = npc.metadata ? JSON.parse(npc.metadata as string) : {}
+  const metadata = npc.metadata ? JSON.parse(npc.metadata as string) : null
 
   return {
     id: npc.id,
@@ -60,6 +60,6 @@ export default defineEventHandler((event) => {
     image_url: npc.image_url,
     created_at: npc.created_at,
     updated_at: npc.updated_at,
-    ...metadata,
+    metadata,
   }
 })

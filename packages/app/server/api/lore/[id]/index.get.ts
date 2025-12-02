@@ -51,7 +51,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const metadata = lore.metadata ? JSON.parse(lore.metadata as string) : {}
+  const metadata = lore.metadata ? JSON.parse(lore.metadata as string) : null
 
   return {
     id: lore.id,
@@ -60,6 +60,6 @@ export default defineEventHandler((event) => {
     image_url: lore.image_url,
     created_at: lore.created_at,
     updated_at: lore.updated_at,
-    ...metadata,
+    metadata,
   }
 })

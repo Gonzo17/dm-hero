@@ -51,7 +51,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const metadata = player.metadata ? JSON.parse(player.metadata as string) : {}
+  const metadata = player.metadata ? JSON.parse(player.metadata as string) : null
 
   return {
     id: player.id,
@@ -60,6 +60,6 @@ export default defineEventHandler((event) => {
     image_url: player.image_url,
     created_at: player.created_at,
     updated_at: player.updated_at,
-    ...metadata,
+    metadata,
   }
 })

@@ -51,7 +51,7 @@ export default defineEventHandler((event) => {
     })
   }
 
-  const metadata = item.metadata ? JSON.parse(item.metadata as string) : {}
+  const metadata = item.metadata ? JSON.parse(item.metadata as string) : null
 
   return {
     id: item.id,
@@ -60,6 +60,6 @@ export default defineEventHandler((event) => {
     image_url: item.image_url,
     created_at: item.created_at,
     updated_at: item.updated_at,
-    ...metadata,
+    metadata,
   }
 })

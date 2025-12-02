@@ -876,7 +876,10 @@
     "timestamp": "Timestamp",
     "useCurrentTime": "Use current time",
     "markerColor": "Color",
-    "saveMarkerError": "Failed to save marker"
+    "saveMarkerError": "Failed to save marker",
+    "invalidTimeFormat": "Invalid format (e.g. 1:30)",
+    "timeMustBePositive": "Time must be positive",
+    "timeExceedsDuration": "Time exceeds audio duration"
   },
   "common": {
     "edit": "Edit",

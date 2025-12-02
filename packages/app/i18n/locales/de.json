@@ -897,7 +897,10 @@
     "timestamp": "Zeitstempel",
     "useCurrentTime": "Aktuelle Zeit",
     "markerColor": "Farbe",
-    "saveMarkerError": "Fehler beim Speichern des Markers"
+    "saveMarkerError": "Fehler beim Speichern des Markers",
+    "invalidTimeFormat": "Ungültiges Format (z.B. 1:30)",
+    "timeMustBePositive": "Zeit muss positiv sein",
+    "timeExceedsDuration": "Zeit überschreitet Audiodauer"
   },
   "common": {
     "edit": "Bearbeiten",
