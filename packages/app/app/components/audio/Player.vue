@@ -198,19 +198,22 @@
           />
           <div class="d-flex align-center gap-3">
             <v-text-field
-              :model-value="formatTime(newMarker.timestampSeconds)"
+              v-model="timestampInput"
               :label="$t('audio.timestamp')"
               variant="outlined"
-              readonly
+              placeholder="0:00"
+              :error-messages="timestampError"
               style="max-width: 120px"
+              @blur="validateAndSetTimestamp"
+              @keyup.enter="validateAndSetTimestamp"
             />
-            <v-btn variant="tonal" size="small" @click="newMarker.timestampSeconds = currentTime">
+            <v-btn variant="tonal" size="small" @click="setCurrentTimeAsTimestamp">
               {{ $t('audio.useCurrentTime') }}
             </v-btn>
           </div>
           <div class="mt-3">
             <v-label class="text-caption">{{ $t('audio.markerColor') }}</v-label>
-            <div class="d-flex gap-2 mt-1">
+            <div class="d-flex ga-3 mt-1">
               <v-btn
                 v-for="color in markerColors"
                 :key="color"
@@ -295,6 +298,8 @@ const newMarker = ref({
   timestampSeconds: 0,
   color: '#D4A574',
 })
+const timestampInput = ref('0:00')
+const timestampError = ref('')
 
 const markerColors = ['#D4A574', '#8B7355', '#4CAF50', '#2196F3', '#9C27B0', '#FF5722']
 
@@ -329,12 +334,73 @@ watch(
   },
 )
 
+// Initialize timestamp input when dialog opens
+watch(showAddMarkerDialog, (isOpen) => {
+  if (isOpen) {
+    timestampInput.value = formatTime(currentTime.value)
+    newMarker.value.timestampSeconds = currentTime.value
+    timestampError.value = ''
+  }
+})
+
 // Methods
 function formatTime(seconds: number): string {
   if (!seconds || isNaN(seconds)) return '0:00'
   const mins = Math.floor(seconds / 60)
   const secs = Math.floor(seconds % 60)
   return `${mins}:${secs.toString().padStart(2, '0')}`
+}
+
+function parseTimeInput(input: string): number | null {
+  // Parse formats like "1:30", "01:30", "90" (seconds only)
+  const trimmed = input.trim()
+  if (!trimmed) return null
+
+  // Format: m:ss or mm:ss
+  const colonMatch = trimmed.match(/^(\d+):(\d{1,2})$/)
+  if (colonMatch && colonMatch[1] && colonMatch[2]) {
+    const mins = parseInt(colonMatch[1], 10)
+    const secs = parseInt(colonMatch[2], 10)
+    if (secs >= 60) return null
+    return mins * 60 + secs
+  }
+
+  // Format: just seconds
+  const secondsMatch = trimmed.match(/^(\d+)$/)
+  if (secondsMatch && secondsMatch[1]) {
+    return parseInt(secondsMatch[1], 10)
+  }
+
+  return null
+}
+
+function validateAndSetTimestamp() {
+  const parsed = parseTimeInput(timestampInput.value)
+
+  if (parsed === null) {
+    timestampError.value = t('audio.invalidTimeFormat')
+    return
+  }
+
+  if (parsed < 0) {
+    timestampError.value = t('audio.timeMustBePositive')
+    return
+  }
+
+  if (duration.value > 0 && parsed > duration.value) {
+    timestampError.value = t('audio.timeExceedsDuration')
+    return
+  }
+
+  timestampError.value = ''
+  newMarker.value.timestampSeconds = parsed
+  timestampInput.value = formatTime(parsed)
+}
+
+function setCurrentTimeAsTimestamp() {
+  newMarker.value.timestampSeconds = currentTime.value
+  timestampInput.value = formatTime(currentTime.value)
+  timestampError.value = ''
 }
 
 function togglePlay() {
@@ -437,6 +503,8 @@ async function saveMarker() {
       timestampSeconds: currentTime.value,
       color: '#D4A574',
     }
+    timestampInput.value = formatTime(currentTime.value)
+    timestampError.value = ''
     emit('markers-updated')
   } catch (error) {
     console.error('Failed to save marker:', error)
