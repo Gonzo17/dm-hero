@@ -42,8 +42,11 @@ export default defineEventHandler((event) => {
   for (const type of entityTypes) {
     let typeResults: EntityResult[]
 
+    // All entity types use bidirectional relation queries (checking both from_entity_id and to_entity_id)
+    // This ensures linked entities are found regardless of which direction the relation was created
+
     if (type.name === 'Location') {
-      // Locations: Include linked NPCs, Items, and Lore
+      // Locations: Include linked NPCs, Items, Lore, Factions, Players (bidirectional)
       typeResults = db
         .prepare(
           `
@@ -54,29 +57,69 @@ export default defineEventHandler((event) => {
           ? as type,
           ? as icon,
           ? as color,
-          GROUP_CONCAT(DISTINCT npc.name || '|' || item.name || '|' || lore.name) as linked_entities
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
         FROM entities e
-        LEFT JOIN entity_relations npc_rel ON npc_rel.to_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = npc_rel.from_entity_id
-          AND npc.deleted_at IS NULL
-          AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
-        LEFT JOIN entity_relations item_rel ON item_rel.to_entity_id = e.id
-        LEFT JOIN entities item ON item.id = item_rel.from_entity_id
-          AND item.deleted_at IS NULL
-          AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
-        LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
-          AND lore.deleted_at IS NULL
-          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
-        GROUP BY e.id
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else if (type.name === 'NPC') {
-      // NPCs: Include linked Locations and Lore
+      // NPCs: Include linked Locations, Items, Lore, Factions, Players (bidirectional)
       typeResults = db
         .prepare(
           `
@@ -87,25 +130,69 @@ export default defineEventHandler((event) => {
           ? as type,
           ? as icon,
           ? as color,
-          GROUP_CONCAT(DISTINCT loc.name || '|' || lore.name) as linked_entities
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
         FROM entities e
-        LEFT JOIN entity_relations loc_rel ON loc_rel.from_entity_id = e.id
-        LEFT JOIN entities loc ON loc.id = loc_rel.to_entity_id
-          AND loc.deleted_at IS NULL
-          AND loc.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
-        LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
-          AND lore.deleted_at IS NULL
-          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
-        GROUP BY e.id
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else if (type.name === 'Item') {
-      // Items: Include owner NPCs, Locations, and Lore
+      // Items: Include linked NPCs, Locations, Lore, Factions, Players (bidirectional)
       typeResults = db
         .prepare(
           `
@@ -116,29 +203,69 @@ export default defineEventHandler((event) => {
           ? as type,
           ? as icon,
           ? as color,
-          GROUP_CONCAT(DISTINCT npc.name || '|' || loc.name || '|' || lore.name) as linked_entities
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
         FROM entities e
-        LEFT JOIN entity_relations owner_rel ON owner_rel.to_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = owner_rel.from_entity_id
-          AND npc.deleted_at IS NULL
-          AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
-        LEFT JOIN entity_relations loc_rel ON loc_rel.to_entity_id = e.id
-        LEFT JOIN entities loc ON loc.id = loc_rel.from_entity_id
-          AND loc.deleted_at IS NULL
-          AND loc.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
-        LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
-          AND lore.deleted_at IS NULL
-          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
-        GROUP BY e.id
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else if (type.name === 'Faction') {
-      // Factions: Include linked NPCs (members) and Lore
+      // Factions: Include linked NPCs, Items, Locations, Lore, Players (bidirectional)
       typeResults = db
         .prepare(
           `
@@ -149,25 +276,69 @@ export default defineEventHandler((event) => {
           ? as type,
           ? as icon,
           ? as color,
-          GROUP_CONCAT(DISTINCT npc.name || '|' || lore.name) as linked_entities
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
         FROM entities e
-        LEFT JOIN entity_relations member_rel ON member_rel.to_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = member_rel.from_entity_id
-          AND npc.deleted_at IS NULL
-          AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
-        LEFT JOIN entity_relations lore_rel ON lore_rel.to_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.from_entity_id
-          AND lore.deleted_at IS NULL
-          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
-        GROUP BY e.id
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else if (type.name === 'Player') {
-      // Players: Include linked NPCs (characters), Items, and Lore
+      // Players: Include linked NPCs, Items, Locations, Factions, Lore (bidirectional)
       typeResults = db
         .prepare(
           `
@@ -178,29 +349,142 @@ export default defineEventHandler((event) => {
           ? as type,
           ? as icon,
           ? as color,
-          GROUP_CONCAT(DISTINCT npc.name || '|' || item.name || '|' || lore.name) as linked_entities
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
         FROM entities e
-        LEFT JOIN entity_relations char_rel ON char_rel.from_entity_id = e.id
-        LEFT JOIN entities npc ON npc.id = char_rel.to_entity_id
-          AND npc.deleted_at IS NULL
-          AND npc.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
-        LEFT JOIN entity_relations item_rel ON item_rel.from_entity_id = e.id
-        LEFT JOIN entities item ON item.id = item_rel.to_entity_id
-          AND item.deleted_at IS NULL
-          AND item.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
-        LEFT JOIN entity_relations lore_rel ON lore_rel.from_entity_id = e.id
-        LEFT JOIN entities lore ON lore.id = lore_rel.to_entity_id
-          AND lore.deleted_at IS NULL
-          AND lore.type_id = (SELECT id FROM entity_types WHERE name = 'Lore')
         WHERE e.type_id = ?
           AND e.campaign_id = ?
           AND e.deleted_at IS NULL
-        GROUP BY e.id
+      `,
+        )
+        .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
+    } else if (type.name === 'Lore') {
+      // Lore: Include linked NPCs, Items, Locations, Factions, Players (bidirectional)
+      typeResults = db
+        .prepare(
+          `
+        SELECT
+          e.id,
+          e.name,
+          e.description,
+          ? as type,
+          ? as icon,
+          ? as color,
+          (
+            SELECT GROUP_CONCAT(linked.name, '|')
+            FROM (
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'NPC')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Item')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Location')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Faction')
+              WHERE r.from_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.from_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.to_entity_id = e.id
+              UNION ALL
+              SELECT x.name FROM entity_relations r
+              JOIN entities x ON x.id = r.to_entity_id AND x.deleted_at IS NULL
+                AND x.type_id = (SELECT id FROM entity_types WHERE name = 'Player')
+              WHERE r.from_entity_id = e.id
+            ) linked
+          ) as linked_entities
+        FROM entities e
+        WHERE e.type_id = ?
+          AND e.campaign_id = ?
+          AND e.deleted_at IS NULL
       `,
         )
         .all(type.name, type.icon, type.color, type.id, campaignId) as EntityResult[]
     } else {
-      // Other types (e.g., Lore): Simple query without relations
+      // Other unknown types: Simple query without relations
       typeResults = db
         .prepare(
           `
