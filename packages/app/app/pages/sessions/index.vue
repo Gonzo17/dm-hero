@@ -969,13 +969,14 @@ watch(
 watch(
   () => sessionForm.value.in_game_day_end,
   (newEnd) => {
-    if (
-      newEnd !== null &&
-      sessionForm.value.in_game_day_start !== null &&
-      newEnd < sessionForm.value.in_game_day_start
-    ) {
-      // End is before start - adjust start to match end
-      sessionForm.value.in_game_day_start = newEnd
+    if (newEnd !== null) {
+      if (sessionForm.value.in_game_day_start === null) {
+        // End is set but start is not - set start to same as end
+        sessionForm.value.in_game_day_start = newEnd
+      } else if (newEnd < sessionForm.value.in_game_day_start) {
+        // End is before start - adjust start to match end
+        sessionForm.value.in_game_day_start = newEnd
+      }
     }
   },
 )

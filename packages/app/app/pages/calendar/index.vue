@@ -586,13 +586,40 @@ const calendarGridStyle = computed(() => {
 // Functions
 function getTotalDays(year: number, month: number, day: number): number {
   let total = 0
-  const daysPerYear = calendarConfig.value.months.reduce((sum, m) => sum + m.days, 0)
-  total += (year - 1) * daysPerYear
-  for (let i = 0; i < month - 1; i++) {
-    total += calendarConfig.value.months[i]?.days || 0
+
+  // Add days for complete years (accounting for leap years)
+  for (let y = 1; y < year; y++) {
+    total += getDaysInYear(y)
   }
+
+  // Add days for complete months in current year (accounting for leap years)
+  for (let i = 0; i < month - 1; i++) {
+    total += getDaysInMonthWithLeap(year, i)
+  }
+
   total += day
   return total
+}
+
+// Get total days in a year (accounting for leap years)
+function getDaysInYear(year: number): number {
+  let totalDays = calendarConfig.value.months.reduce((sum, m) => sum + m.days, 0)
+  if (isLeapYear(year)) {
+    totalDays += calendarConfig.value.config.leap_year_extra_days
+  }
+  return totalDays
+}
+
+// Get days in a specific month (accounting for leap years)
+function getDaysInMonthWithLeap(year: number, monthIndex: number): number {
+  const month = calendarConfig.value.months[monthIndex]
+  if (!month) return 30
+  let days = month.days
+  // Add leap year extra days to the designated month
+  if (isLeapYear(year) && calendarConfig.value.config.leap_year_month - 1 === monthIndex) {
+    days += calendarConfig.value.config.leap_year_extra_days
+  }
+  return days
 }
 
 function getFirstDayOffset(): number {
