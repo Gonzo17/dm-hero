@@ -28,7 +28,8 @@
   },
   "editor": {
     "quickInsert": "Quick Insert",
-    "quickSearchPlaceholder": "Type e.g. 'npc gandalf' or 'loc tavern'..."
+    "quickSearchPlaceholder": "Type e.g. 'npc gandalf' or 'loc tavern'...",
+    "quickSearchHint": "{modifier}+Space for quick search"
   },
   "categories": {
     "npcs": {

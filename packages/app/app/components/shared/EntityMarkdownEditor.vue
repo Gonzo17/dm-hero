@@ -114,6 +114,10 @@
           </NormalToolbar>
         </template>
       </MdEditor>
+      <div class="editor-hint text-caption text-medium-emphasis mt-1">
+        <v-icon size="x-small" class="mr-1">mdi-keyboard</v-icon>
+        {{ $t('editor.quickSearchHint', { modifier: modifierKey }) }}
+      </div>
     </ClientOnly>
 
     <!-- Quick Entity Search Popup (Hotkey triggered) -->
@@ -317,6 +321,13 @@ const currentLocale = computed(() => (locale.value === 'de' ? 'de-DE' : 'en-US')
 const editorTheme = computed<'light' | 'dark'>(() =>
   theme.global.current.value.dark ? 'dark' : 'light',
 )
+
+// Platform detection for hotkey hint (Mac uses Cmd, others use Ctrl)
+const isMac = computed(() => {
+  if (import.meta.server) return false
+  return navigator.platform.toUpperCase().indexOf('MAC') >= 0
+})
+const modifierKey = computed(() => (isMac.value ? '⌘' : 'Ctrl'))
 
 // Toolbar config
 type ToolbarOrSlot = ToolbarNames | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
