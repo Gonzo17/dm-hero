@@ -5,9 +5,9 @@ const drawer = ref(false)
 const scrolled = ref(false)
 
 const navItems = [
-  { key: 'features', href: '#features' },
-  { key: 'screenshots', href: '#screenshots' },
-  { key: 'download', href: '#download' },
+  { key: 'features', href: '/#features' },
+  { key: 'screenshots', href: '/#screenshots' },
+  { key: 'download', href: '/#download' },
   { key: 'docs', href: '/docs' },
 ]
 

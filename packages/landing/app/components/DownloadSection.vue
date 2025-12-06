@@ -21,7 +21,7 @@ async function fetchLatestRelease() {
     loading.value = true
     error.value = false
 
-    // Get all releases (includes pre-releases) and pick the first one
+    // Get all releases (includes pre-releases)
     const response = await fetch(
       'https://api.github.com/repos/Flo0806/dm-hero/releases'
     )
@@ -31,8 +31,12 @@ async function fetchLatestRelease() {
     }
 
     const releases = await response.json()
-    if (releases.length > 0) {
-      latestRelease.value = releases[0]
+    // Filter to only app releases (tag starts with "v", not "landing-v")
+    const appReleases = releases.filter(
+      (r: Release) => r.tag_name.startsWith('v') && !r.tag_name.startsWith('landing-v')
+    )
+    if (appReleases.length > 0) {
+      latestRelease.value = appReleases[0]
     }
   } catch {
     error.value = true
