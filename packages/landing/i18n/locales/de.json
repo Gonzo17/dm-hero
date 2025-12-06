@@ -114,6 +114,11 @@
     },
     "allReleases": "Alle Releases auf GitHub ansehen"
   },
+  "feedback": {
+    "title": "Feedback oder Ideen?",
+    "description": "Einen Bug gefunden? Eine Feature-Idee? Willst du teilen, wie du DM Hero nutzt? Schau bei den GitHub Discussions vorbei - zum Lesen brauchst du keinen Account, zum Mitmachen kannst du dir kostenlos einen erstellen!",
+    "button": "Zur Diskussion"
+  },
   "support": {
     "title": "DM Hero unterstützen",
     "description": "DM Hero ist komplett kostenlos und Open Source - und wird es auch immer bleiben. Ich entwickle es in meiner Freizeit, weil ich D&D liebe und anderen Spielleitern helfen möchte.",

@@ -87,7 +87,13 @@ const docs = computed(() => {
 <style scoped>
 .docs-page {
   min-height: 100vh;
-  padding-top: 64px;
+  padding-top: 0;
+}
+
+@media (min-width: 960px) {
+  .docs-page {
+    padding-top: 64px;
+  }
 }
 
 .docs-nav {

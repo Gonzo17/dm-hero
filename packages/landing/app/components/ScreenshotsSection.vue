@@ -1,12 +1,45 @@
 <script setup lang="ts">
 const { t } = useI18n()
 
-const screenshots = [
-  { key: 'dashboard', placeholder: 'dashboard.png' },
-  { key: 'npcs', placeholder: 'npcs.png' },
-  { key: 'chaos', placeholder: 'chaos-graph.png' },
-  { key: 'calendar', placeholder: 'calendar.png' },
+// Screenshot definitions with base name prefix
+// The component will automatically find the highest numbered version
+// e.g., 'dashboard' will match dashboard-01.png, dashboard-02.png, etc.
+const screenshotDefs = [
+  { key: 'dashboard', prefix: 'dashboard' },
+  { key: 'npcs', prefix: 'npc-edit' },
+  { key: 'chaos', prefix: 'chaos' },
+  { key: 'calendar', prefix: 'calendar' },
 ]
+
+// Available screenshot files (will be populated on mount)
+const screenshotFiles = ref<Record<string, string>>({})
+const screenshotsLoaded = ref(false)
+
+// Find highest numbered screenshot for each prefix
+async function loadScreenshots() {
+  const files: Record<string, string> = {}
+
+  for (const def of screenshotDefs) {
+    // Try numbers from 99 down to 01 to find the highest available
+    for (let i = 99; i >= 1; i--) {
+      const num = i.toString().padStart(2, '0')
+      const filename = `/screenshots/${def.prefix}-${num}.png`
+
+      try {
+        const response = await fetch(filename, { method: 'HEAD' })
+        if (response.ok) {
+          files[def.key] = filename
+          break
+        }
+      } catch {
+        // File doesn't exist, continue
+      }
+    }
+  }
+
+  screenshotFiles.value = files
+  screenshotsLoaded.value = true
+}
 
 const activeScreenshot = ref(0)
 
@@ -14,8 +47,10 @@ const activeScreenshot = ref(0)
 let interval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
+  loadScreenshots()
+
   interval = setInterval(() => {
-    activeScreenshot.value = (activeScreenshot.value + 1) % screenshots.length
+    activeScreenshot.value = (activeScreenshot.value + 1) % screenshotDefs.length
   }, 5000)
 })
 
@@ -28,9 +63,13 @@ function selectScreenshot(index: number) {
   // Reset interval when user clicks
   if (interval) clearInterval(interval)
   interval = setInterval(() => {
-    activeScreenshot.value = (activeScreenshot.value + 1) % screenshots.length
+    activeScreenshot.value = (activeScreenshot.value + 1) % screenshotDefs.length
   }, 5000)
 }
+
+// Get current screenshot info
+const currentScreenshot = computed(() => screenshotDefs[activeScreenshot.value])
+const currentImage = computed(() => screenshotFiles.value[currentScreenshot.value.key])
 </script>
 
 <template>
@@ -77,10 +116,16 @@ function selectScreenshot(index: number) {
           </div>
 
           <div class="screenshot-content">
-            <!-- Placeholder for actual screenshots -->
-            <div class="screenshot-placeholder">
+            <!-- Actual screenshot or placeholder -->
+            <img
+              v-if="currentImage"
+              :src="currentImage"
+              :alt="t(`screenshots.items.${currentScreenshot.key}`)"
+              class="screenshot-image"
+            />
+            <div v-else class="screenshot-placeholder">
               <v-icon size="80" color="primary" class="mb-4">mdi-image-outline</v-icon>
-              <p class="text-h6 mb-2">{{ t(`screenshots.items.${screenshots[activeScreenshot].key}`) }}</p>
+              <p class="text-h6 mb-2">{{ t(`screenshots.items.${currentScreenshot.key}`) }}</p>
               <p class="text-body-2 text-medium-emphasis">{{ t('screenshots.comingSoon') }}</p>
             </div>
           </div>
@@ -89,7 +134,7 @@ function selectScreenshot(index: number) {
         <!-- Screenshot Navigation -->
         <div class="screenshot-nav mt-6">
           <v-btn
-            v-for="(screenshot, index) in screenshots"
+            v-for="(screenshot, index) in screenshotDefs"
             :key="screenshot.key"
             :variant="activeScreenshot === index ? 'flat' : 'tonal'"
             :color="activeScreenshot === index ? 'primary' : 'default'"
@@ -104,7 +149,7 @@ function selectScreenshot(index: number) {
         <!-- Progress Bar -->
         <div class="screenshot-progress mt-4">
           <div
-            v-for="(_, index) in screenshots"
+            v-for="(_, index) in screenshotDefs"
             :key="index"
             class="progress-segment"
             :class="{ 'progress-segment--active': activeScreenshot === index }"
@@ -133,7 +178,7 @@ function selectScreenshot(index: number) {
 }
 
 .screenshot-container {
-  max-width: 1000px;
+  max-width: 1010px;
   margin: 0 auto;
 }
 
@@ -190,9 +235,16 @@ function selectScreenshot(index: number) {
 }
 
 .screenshot-content {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
+}
+
+.screenshot-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
 }
 
 .screenshot-placeholder {

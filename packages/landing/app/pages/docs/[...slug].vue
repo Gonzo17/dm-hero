@@ -145,8 +145,14 @@ const { data: page } = await useAsyncData(
 .docs-page {
   position: relative;
   min-height: 100vh;
-  padding-top: 64px;
+  padding-top: 0;
   overflow: hidden;
+}
+
+@media (min-width: 960px) {
+  .docs-page {
+    padding-top: 64px;
+  }
 }
 
 .docs-bg {
