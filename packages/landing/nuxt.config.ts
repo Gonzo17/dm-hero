@@ -10,8 +10,6 @@ export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxtjs/i18n', '@vueuse/motion/nuxt', '@nuxt/content'],
 
   css: [
-    'vuetify/styles',
-    '@mdi/font/css/materialdesignicons.css',
     '@/assets/css/main.css',
     '@/assets/css/animations.css',
   ],

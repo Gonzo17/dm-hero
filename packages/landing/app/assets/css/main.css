@@ -83,6 +83,11 @@ body {
   animation: gradient-shift 3s ease infinite;
 }
 
+/* Gradient color for icons (no text-fill-color trick) */
+.gradient-icon {
+  color: var(--dm-gold) !important;
+}
+
 /* Glass morphism effect */
 .glass {
   background: rgba(36, 40, 54, 0.7);

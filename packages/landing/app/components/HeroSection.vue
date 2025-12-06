@@ -158,16 +158,16 @@ onMounted(() => {
               </v-col>
               <v-col cols="6" sm="3">
                 <div class="stat-item">
-                  <div class="stat-number gradient-text">
-                    <v-icon color="primary">mdi-shield-check</v-icon>
+                  <div class="stat-number stat-icon">
+                    <v-icon size="32">mdi-lock</v-icon>
                   </div>
                   <div class="stat-label">{{ t('hero.stats.local') }}</div>
                 </div>
               </v-col>
               <v-col cols="6" sm="3">
                 <div class="stat-item">
-                  <div class="stat-number gradient-text">
-                    <v-icon color="primary">mdi-heart</v-icon>
+                  <div class="stat-number stat-icon">
+                    <v-icon size="32">mdi-infinity</v-icon>
                   </div>
                   <div class="stat-label">{{ t('hero.stats.free') }}</div>
                 </div>
@@ -352,6 +352,15 @@ onMounted(() => {
   color: rgba(var(--v-theme-on-background), 0.7);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+/* Gold color for stat icons - matches gradient-text visually */
+.stat-icon {
+  color: #ffd700;
+}
+
+.stat-icon :deep(.v-icon) {
+  color: #ffd700 !important;
 }
 
 .scroll-indicator {

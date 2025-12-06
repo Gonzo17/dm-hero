@@ -1,45 +1,23 @@
 <script setup lang="ts">
 const { t } = useI18n()
 
-// Screenshot definitions with base name prefix
-// The component will automatically find the highest numbered version
-// e.g., 'dashboard' will match dashboard-01.png, dashboard-02.png, etc.
+// Screenshot definitions with the current version number
+// Update the version number when adding new screenshots
 const screenshotDefs = [
-  { key: 'dashboard', prefix: 'dashboard' },
-  { key: 'npcs', prefix: 'npc-edit' },
-  { key: 'chaos', prefix: 'chaos' },
-  { key: 'calendar', prefix: 'calendar' },
+  { key: 'dashboard', file: '/screenshots/dashboard-01.png' },
+  { key: 'npcs', file: '/screenshots/npc-edit-01.png' },
+  { key: 'chaos', file: '/screenshots/chaos-01.png' },
+  { key: 'calendar', file: '/screenshots/calendar-01.png' },
 ]
 
-// Available screenshot files (will be populated on mount)
-const screenshotFiles = ref<Record<string, string>>({})
-const screenshotsLoaded = ref(false)
-
-// Find highest numbered screenshot for each prefix
-async function loadScreenshots() {
+// Map for easy lookup
+const screenshotFiles = computed(() => {
   const files: Record<string, string> = {}
-
   for (const def of screenshotDefs) {
-    // Try numbers from 99 down to 01 to find the highest available
-    for (let i = 99; i >= 1; i--) {
-      const num = i.toString().padStart(2, '0')
-      const filename = `/screenshots/${def.prefix}-${num}.png`
-
-      try {
-        const response = await fetch(filename, { method: 'HEAD' })
-        if (response.ok) {
-          files[def.key] = filename
-          break
-        }
-      } catch {
-        // File doesn't exist, continue
-      }
-    }
+    files[def.key] = def.file
   }
-
-  screenshotFiles.value = files
-  screenshotsLoaded.value = true
-}
+  return files
+})
 
 const activeScreenshot = ref(0)
 
@@ -47,8 +25,6 @@ const activeScreenshot = ref(0)
 let interval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
-  loadScreenshots()
-
   interval = setInterval(() => {
     activeScreenshot.value = (activeScreenshot.value + 1) % screenshotDefs.length
   }, 5000)
@@ -69,7 +45,10 @@ function selectScreenshot(index: number) {
 
 // Get current screenshot info
 const currentScreenshot = computed(() => screenshotDefs[activeScreenshot.value])
-const currentImage = computed(() => screenshotFiles.value[currentScreenshot.value.key])
+const currentImage = computed(() => {
+  const screenshot = currentScreenshot.value
+  return screenshot ? screenshotFiles.value[screenshot.key] : undefined
+})
 </script>
 
 <template>
@@ -118,12 +97,12 @@ const currentImage = computed(() => screenshotFiles.value[currentScreenshot.valu
           <div class="screenshot-content">
             <!-- Actual screenshot or placeholder -->
             <img
-              v-if="currentImage"
+              v-if="currentImage && currentScreenshot"
               :src="currentImage"
               :alt="t(`screenshots.items.${currentScreenshot.key}`)"
               class="screenshot-image"
             />
-            <div v-else class="screenshot-placeholder">
+            <div v-else-if="currentScreenshot" class="screenshot-placeholder">
               <v-icon size="80" color="primary" class="mb-4">mdi-image-outline</v-icon>
               <p class="text-h6 mb-2">{{ t(`screenshots.items.${currentScreenshot.key}`) }}</p>
               <p class="text-body-2 text-medium-emphasis">{{ t('screenshots.comingSoon') }}</p>
