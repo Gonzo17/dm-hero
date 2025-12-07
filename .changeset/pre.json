@@ -1,9 +1,0 @@
-{
-  "mode": "pre",
-  "tag": "beta",
-  "initialVersions": {
-    "@dm-hero/app": "1.0.0",
-    "@dm-hero/landing": "1.0.0"
-  },
-  "changesets": []
-}
