@@ -2,21 +2,8 @@
   "mode": "pre",
   "tag": "beta",
   "initialVersions": {
-    "@dm-hero/app": "1.0.0-alpha.19",
-    "@dm-hero/landing": "1.0.0-alpha.8"
+    "@dm-hero/app": "1.0.0",
+    "@dm-hero/landing": "1.0.0"
   },
-  "changesets": [
-    "alpha-17-release",
-    "better-sqlite3-fix",
-    "bindings-fix",
-    "calendar-weather-icons",
-    "enhanced-dalle-prompts",
-    "fix-landing-icons-chrome",
-    "keyboard-shortcut-display",
-    "landing-docs-update",
-    "landing-feedback-screenshots",
-    "landing-icons-nuxt",
-    "landing-support-bmc",
-    "npc-relation-counts"
-  ]
+  "changesets": []
 }
