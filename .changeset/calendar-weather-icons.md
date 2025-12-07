@@ -1,5 +1,5 @@
 ---
-"@dm-hero/app": minor
+"@dm-hero/app": patch
 ---
 
 ## Calendar Weather System
