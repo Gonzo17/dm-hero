@@ -264,20 +264,8 @@ async function onDragEnd() {
   await notesStore.reorderNotes(noteIds)
 }
 
-// Watch campaign changes
-watch(
-  campaignId,
-  (newId) => {
-    if (newId) {
-      notesStore.fetchNotes(Number(newId))
-    } else {
-      notesStore.clearNotes()
-    }
-  },
-  { immediate: true },
-)
-
 // Initialize campaign from cookie on mount
+// Note: Notes are loaded by app.vue watcher, no need to duplicate here
 onMounted(() => {
   campaignStore.initFromCookie()
 })

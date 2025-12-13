@@ -105,17 +105,20 @@ onMounted(() => {
 })
 
 // Load notes when campaign changes (for badge in drawer)
-watch(
-  () => campaignStore.activeCampaignId,
-  (newId) => {
-    if (newId) {
-      notesStore.fetchNotes(Number(newId))
-    } else {
-      notesStore.clearNotes()
-    }
-  },
-  { immediate: true },
-)
+// Only run on client to avoid SSR hydration issues with loading state
+if (import.meta.client) {
+  watch(
+    () => campaignStore.activeCampaignId,
+    (newId) => {
+      if (newId) {
+        notesStore.fetchNotes(Number(newId))
+      } else {
+        notesStore.clearNotes()
+      }
+    },
+    { immediate: true },
+  )
+}
 
 function toggleTheme() {
   theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark'
