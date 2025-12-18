@@ -53,45 +53,45 @@
           <DashboardMapsWidget :maps="maps" class="flex-grow-1" />
         </v-col>
 
-        <!-- Widgets container (right side on xl, or full width without map) -->
-        <v-col cols="12" :xl="maps.length > 0 ? 6 : 12" class="d-flex">
-          <v-row class="flex-grow-1 widgets-grid">
+        <!-- Widgets container (right side on xl when map present) -->
+        <v-col cols="12" :xl="maps.length > 0 ? 6 : 12">
+          <v-row>
             <!-- Stats Card -->
-            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3" class="d-flex">
+            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3">
               <DashboardStatsCard
                 :total-playtime-minutes="totalPlaytimeMinutes"
                 :session-count="sessionCount"
                 :total-entities="totalEntities"
                 :pinned-count="pinboardStore.pinCount"
-                class="flex-grow-1"
+                class="h-100"
               />
             </v-col>
 
             <!-- Calendar Widget -->
-            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3" class="d-flex">
+            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3">
               <DashboardCalendarWidget
                 :calendar="calendarData"
                 :weather="currentWeather"
                 :loading="calendarLoading"
                 :days-since-first-session="daysSinceFirstSession"
-                class="flex-grow-1"
+                class="h-100"
               />
             </v-col>
 
             <!-- Notes Widget -->
-            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3" class="d-flex">
+            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3">
               <DashboardNotesWidget
                 :notes="notesStore.notes"
                 :pending-count="notesStore.pendingCount"
-                class="flex-grow-1"
+                class="h-100"
               />
             </v-col>
 
             <!-- Pinboard Widget -->
-            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3" class="d-flex">
+            <v-col cols="12" sm="6" :lg="maps.length > 0 ? 6 : 3">
               <DashboardPinboardWidget
                 :pins="pinboardStore.pins"
-                class="flex-grow-1"
+                class="h-100"
                 @open-entity="openEntityPreview"
               />
             </v-col>
@@ -498,20 +498,8 @@ watch(activeCampaignId, (newId) => {
   }
 }
 
-/* Widget grid for equal heights */
+/* Widget row alignment */
 .widgets-row {
   align-items: stretch;
-}
-
-.widgets-grid {
-  align-content: stretch;
-}
-
-/* At xl breakpoint with map: make 2 rows of widgets match map height */
-@media (min-width: 1920px) {
-  .widgets-grid > .v-col {
-    flex: 0 0 50%;
-    max-width: 50%;
-  }
 }
 </style>

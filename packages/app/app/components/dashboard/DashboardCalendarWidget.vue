@@ -122,7 +122,8 @@ const weatherLabel = computed(() => {
 }
 
 .date-day {
-  min-width: 48px;
+  min-width: 40px;
+  flex-shrink: 0;
   line-height: 1;
 }
 </style>
